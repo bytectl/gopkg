@@ -17,7 +17,12 @@ func DecryptConfigMap(config map[string]interface{}, key []byte) {
 	for k, value := range config {
 		if s, ok := value.(string); ok {
 			if strings.HasPrefix(s, EncPrefix) {
-				config[k], _ = DecryptString(s, key)
+				source, err := DecryptString(s, key)
+				if err != nil {
+					fmt.Println(k, ":", s, ",decrypt error:", err)
+					continue
+				}
+				config[k] = source
 			}
 		} else if m, ok := value.(map[string]interface{}); ok {
 			DecryptConfigMap(m, key)
