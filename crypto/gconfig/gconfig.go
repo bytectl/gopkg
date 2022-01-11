@@ -15,17 +15,30 @@ const (
 
 func DecryptConfigMap(config map[string]interface{}, key []byte) {
 	for k, value := range config {
-		if s, ok := value.(string); ok {
-			if strings.HasPrefix(s, EncPrefix) {
-				source, err := DecryptString(s, key)
-				if err != nil {
-					fmt.Println(k, ":", s, ",decrypt error:", err)
-					continue
-				}
-				config[k] = source
+		switch v1 := value.(type) {
+		case string:
+			source, err := DecryptString(v1, key)
+			if err != nil {
+				fmt.Println(k, ":", v1, ",decrypt error:", err)
+				continue
 			}
-		} else if m, ok := value.(map[string]interface{}); ok {
-			DecryptConfigMap(m, key)
+			config[k] = source
+		case map[string]interface{}:
+			DecryptConfigMap(v1, key)
+		case []interface{}:
+			for i, item := range v1 {
+				switch v2 := item.(type) {
+				case string:
+					source, err := DecryptString(v2, key)
+					if err != nil {
+						fmt.Println(k, ":", v2, ",decrypt error:", err)
+						continue
+					}
+					v1[i] = source
+				case map[string]interface{}:
+					DecryptConfigMap(v2, key)
+				}
+			}
 		}
 	}
 }
