@@ -122,7 +122,32 @@ func (tm *ThingModel) addDefault() {
 	})
 }
 
-func (tm *ThingModel) propertiesToMap(ps []Property) map[string]Property {
+type ValidateEvent struct {
+	Identifier string
+	Name       string
+	Desc       string
+	Method     string
+	Type       string
+	OutputData map[string]Property
+}
+type ValidateService struct {
+	Identifier string
+	Name       string
+	Desc       string
+	Method     string
+	CallType   string
+	Required   bool
+	OutputData map[string]Property
+	InputData  map[string]Property
+}
+
+// 校验模型
+type ValidateModel struct {
+	Services map[string]ValidateService
+	Events   map[string]ValidateEvent
+}
+
+func propertiesToMap(ps []Property) map[string]Property {
 	paramsMap := make(map[string]Property)
 	for _, v := range ps {
 		paramsMap[v.Identifier] = v
@@ -130,57 +155,99 @@ func (tm *ThingModel) propertiesToMap(ps []Property) map[string]Property {
 	return paramsMap
 }
 
-// 服务校验
-func (tm *ThingModel) ServiceValidate(service string, inputParams map[string]interface{}, outputParams map[string]interface{}) (bool, error) {
-	result := false
-	if service == "" {
-		return result, fmt.Errorf("service is empty")
+// 转换为校验模型
+func (tm *ThingModel) ToValidateModel() *ValidateModel {
+	validateModel := &ValidateModel{
+		Events:   make(map[string]ValidateEvent),
+		Services: make(map[string]ValidateService),
 	}
-	// if params == nil {
-	// 	return result, fmt.Errorf("params is nil")
-	// }
-
-	// serviceInfo, ok := tm.mapProperties[service]
-	// if !ok {
-	// 	return result, fmt.Errorf("service not found")
-	// }
-
-	// if serviceInfo.Required {
-	// 	for _, v := range serviceInfo.InputData {
-	// 		if _, ok := params[v.Identifier]; !ok {
-	// 			return result, fmt.Errorf("param %s is required", v.Identifier)
-	// 		}
-	// 	}
-	// }
-
-	return true, nil
-
+	for _, v := range tm.Events {
+		validateModel.Events[v.Identifier] = ValidateEvent{
+			Identifier: v.Identifier,
+			Name:       v.Name,
+			Desc:       v.Desc,
+			Method:     v.Method,
+			Type:       v.Type,
+			OutputData: propertiesToMap(v.OutputData),
+		}
+	}
+	for _, v := range tm.Services {
+		validateModel.Services[v.Identifier] = ValidateService{
+			Identifier: v.Identifier,
+			Name:       v.Name,
+			Desc:       v.Desc,
+			Method:     v.Method,
+			CallType:   v.CallType,
+			Required:   v.Required,
+			OutputData: propertiesToMap(v.OutputData),
+			InputData:  propertiesToMap(v.InputData),
+		}
+	}
+	return validateModel
 }
 
-// 属性校验
-func (tm *ThingModel) ValidateProperties(properties string) (bool, error) {
+// 服务校验
+func (vm *ValidateModel) ServiceValidate(identifier string, inputParams string, outputParams string) (bool, error) {
+	result := false
+	service, ok := vm.Services[identifier]
+	if !ok {
+		return result, fmt.Errorf("服务identifier: %s不存在", identifier)
+	}
+	if inputParams != "" {
+		b, err := vm.validateParams(service.InputData, inputParams)
+		if !b {
+			return result, err
+		}
+	}
+	if outputParams != "" {
+		b, err := vm.validateParams(service.OutputData, outputParams)
+		if !b {
+			return result, err
+		}
+	}
+	return true, nil
+}
+
+// 事件校验
+func (vm *ValidateModel) EventValidate(identifier string, outputParams string) (bool, error) {
+	result := false
+	event, ok := vm.Events[identifier]
+	if !ok {
+		return result, fmt.Errorf("事件identifier: %s不存在", identifier)
+	}
+	if outputParams != "" {
+		b, err := vm.validateParams(event.OutputData, outputParams)
+		if !b {
+			return result, err
+		}
+	}
+	return true, nil
+}
+
+// 参数校验
+func (tm *ValidateModel) validateParams(mapProperties map[string]Property, params string) (bool, error) {
 	var (
 		paramMap = make(map[string]interface{})
 		result   = false
 	)
 
-	decoder := json.NewDecoder(bytes.NewReader([]byte(properties)))
+	decoder := json.NewDecoder(bytes.NewReader([]byte(params)))
 	// 使用json number
 	decoder.UseNumber()
 	if err := decoder.Decode(&paramMap); err != nil {
 		return result, err
 	}
-	mapProperties := tm.propertiesToMap(tm.Properties)
-	// 遍历属性模型
+
+	// 遍历参数
 	for k, v := range paramMap {
 		if v == nil {
 			continue
 		}
 		property, ok := mapProperties[k]
 		if !ok {
-			return result, fmt.Errorf("property %s is not found in thing model", k)
+			return result, fmt.Errorf("property or param  %s is not found in thing model", k)
 		}
-		preTypeErr := fmt.Errorf("property %s is not a %v,value: %v", k, property.DataType.Type, v)
+		preTypeErr := fmt.Errorf("property or param %s is not a %v,value: %v", k, property.DataType.Type, v)
 
 		switch property.DataType.Type {
 		case "long", "date", "int":
@@ -209,13 +276,13 @@ func (tm *ThingModel) ValidateProperties(properties string) (bool, error) {
 			if spec.Max != "" {
 				max, _ := strconv.ParseFloat(spec.Max, 64)
 				if value > max {
-					return result, fmt.Errorf("property %s is out of max value %v", k, spec.Max)
+					return result, fmt.Errorf("property or param  %s is out of max value %v", k, spec.Max)
 				}
 			}
 			if spec.Min != "" {
 				min, _ := strconv.ParseFloat(spec.Min, 64)
 				if value < min {
-					return result, fmt.Errorf("property %s is out of min value %v", k, spec.Min)
+					return result, fmt.Errorf("property  or param  %s is out of min value %v", k, spec.Min)
 				}
 			}
 		case "enum":
