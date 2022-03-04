@@ -66,7 +66,7 @@ func TestValidateThingModel(t *testing.T) {
       "version": "1.0"
     }
 	`
-	tm, err := NewTingModel(model)
+	tm, err := NewThingModel(model)
 	if err != nil {
 		t.Error(err)
 	}

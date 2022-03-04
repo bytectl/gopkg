@@ -72,7 +72,7 @@ type ThingModel struct {
 	Properties []Property `json:"properties"`
 }
 
-func NewTingModel(thingModel string) (*ThingModel, error) {
+func NewThingModel(thingModel string) (*ThingModel, error) {
 	var tm ThingModel
 	err := json.Unmarshal([]byte(thingModel), &tm)
 	if err != nil {
