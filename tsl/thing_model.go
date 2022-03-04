@@ -245,9 +245,9 @@ func (tm *ValidateModel) validateParams(mapProperties map[string]Property, param
 		}
 		property, ok := mapProperties[k]
 		if !ok {
-			return result, fmt.Errorf("property or param  %s is not found in thing model", k)
+			return result, fmt.Errorf("property or param (%s) is not found in thing model", k)
 		}
-		preTypeErr := fmt.Errorf("property or param %s is not a %v,value: %v", k, property.DataType.Type, v)
+		preTypeErr := fmt.Errorf("property or param (%s) is not a %v,value: %v", k, property.DataType.Type, v)
 
 		switch property.DataType.Type {
 		case "long", "date", "int":
@@ -292,7 +292,6 @@ func (tm *ValidateModel) validateParams(mapProperties map[string]Property, param
 			}
 			value, err := vNumber.Int64()
 			if err != nil {
-				fmt.Printf("%s\n", err)
 				return result, preTypeErr
 			}
 			spec := make(map[string]interface{})
