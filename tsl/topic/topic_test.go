@@ -9,12 +9,12 @@ import (
 func TestParseTopic(t *testing.T) {
 	tests := []struct {
 		topic   string
-		want    Topic
+		want    *Topic
 		wantErr bool
 	}{
 		{
 			"/sys/{productKey}/{deviceName}/thing/sub/register",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/sub/register",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -28,7 +28,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/sub/register_reply",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/sub/register_reply",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -42,7 +42,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/ext/session/{productKey}/{deviceName}/combine/login",
-			Topic{
+			&Topic{
 				OrigTopic:  "/ext/session/{productKey}/{deviceName}/combine/login",
 				Prefix:     "/ext/session/",
 				ProductKey: "{productKey}",
@@ -56,7 +56,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/ext/session/{productKey}/{deviceName}/combine/login_reply",
-			Topic{
+			&Topic{
 				OrigTopic:  "/ext/session/{productKey}/{deviceName}/combine/login_reply",
 				Prefix:     "/ext/session/",
 				ProductKey: "{productKey}",
@@ -70,7 +70,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/discovery/open",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/discovery/open",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -84,7 +84,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/topo/add",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/topo/add",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -98,7 +98,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/topo/add_reply",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/topo/add_reply",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -112,7 +112,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/event/property/post",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/event/property/post",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -126,7 +126,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/event/property/post_reply",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/event/property/post_reply",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -140,7 +140,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/service/property/get",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/service/property/get",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -154,7 +154,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/service/property/get_reply",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/service/property/get_reply",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -168,7 +168,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/service/{tsl.service.identifier}",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/service/{tsl.service.identifier}",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -182,7 +182,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/service/{tsl.service.identifier}_reply",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/service/{tsl.service.identifier}_reply",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -196,7 +196,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/property/desired/get",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/property/desired/get",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -210,7 +210,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/property/desired/get_reply",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/property/desired/get_reply",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -224,7 +224,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/delete",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/delete",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -238,7 +238,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/thing/deviceinfo/delete",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/thing/deviceinfo/delete",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -252,7 +252,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/ota/device/check",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/ota/device/check",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -266,7 +266,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/log/upload",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/log/upload",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -280,7 +280,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/log/upload/reply",
-			Topic{
+			&Topic{
 				OrigTopic:  "/sys/{productKey}/{deviceName}/log/upload/reply",
 				Prefix:     "/sys/",
 				ProductKey: "{productKey}",
@@ -294,7 +294,7 @@ func TestParseTopic(t *testing.T) {
 		},
 		{
 			"/sys/{productKey}/{deviceName}/log",
-			Topic{
+			&Topic{
 				OrigTopic: "/sys/{productKey}/{deviceName}/log",
 				Prefix:    "/sys/",
 			},

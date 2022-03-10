@@ -45,11 +45,9 @@ type Topic struct {
 	IsReply    bool
 }
 
-func ParseTopic(topic string) (Topic, error) {
-	var (
-		t        Topic
-		subTopic string
-	)
+func ParseTopic(topic string) (*Topic, error) {
+	subTopic := ""
+	t := &Topic{}
 	t.OrigTopic = topic
 	for _, prefix := range TopicPrefix {
 		if strings.HasPrefix(topic, prefix) {
