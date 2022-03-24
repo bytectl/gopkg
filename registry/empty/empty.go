@@ -29,6 +29,10 @@ func (e *Empty) GetService(ctx context.Context, serviceName string) ([]*registry
 	return []*registry.ServiceInstance{}, nil
 }
 
+func (e *Empty) Watch(ctx context.Context, serviceName string) (registry.Watcher, error) {
+	return e, nil
+}
+
 func (e *Empty) Next() ([]*registry.ServiceInstance, error) {
 	return []*registry.ServiceInstance{}, nil
 }
