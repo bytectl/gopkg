@@ -124,26 +124,21 @@ type Server struct {
 // NewServer creates an MQTT server by options.
 func NewServer(opts ...ServerOption) *Server {
 	srv := &Server{
-		mqttClient:   nil,
 		clientOption: pmqtt.NewClientOptions(),
 		log:          log.NewHelper(log.GetLogger()),
 	}
 	for _, o := range opts {
 		o(srv)
 	}
+	srv.mqttClient = pmqtt.NewClient(srv.clientOption)
 	return srv
 }
 
 func (s *Server) Start(ctx context.Context) error {
-
-	if s.mqttClient == nil {
-		s.mqttClient = pmqtt.NewClient(s.clientOption)
-	}
 	s.log.Info("[mqtt] server starting")
 	if token := s.mqttClient.Connect(); !token.WaitTimeout(1*time.Second) || token.Error() != nil {
 		panic("mqtt connect error, " + token.Error().Error())
 	}
-
 	return nil
 }
 
