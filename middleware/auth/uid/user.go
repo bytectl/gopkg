@@ -32,7 +32,7 @@ func Server() middleware.Middleware {
 			if header, ok := transport.FromServerContext(ctx); ok {
 				id := header.RequestHeader().Get(authUserKey)
 				if id != "" {
-					ctx = NewContext(ctx, UserData{
+					ctx = NewContext(ctx, &UserData{
 						ID: id,
 					})
 				} else {
@@ -45,12 +45,12 @@ func Server() middleware.Middleware {
 }
 
 // NewContext put user info into context
-func NewContext(ctx context.Context, info UserData) context.Context {
+func NewContext(ctx context.Context, info *UserData) context.Context {
 	return context.WithValue(ctx, uidKey{}, info)
 }
 
 // FromContext extract user info from context
-func FromContext(ctx context.Context) (info UserData, ok bool) {
-	info, ok = ctx.Value(uidKey{}).(UserData)
+func FromContext(ctx context.Context) (info *UserData, ok bool) {
+	info, ok = ctx.Value(uidKey{}).(*UserData)
 	return
 }
