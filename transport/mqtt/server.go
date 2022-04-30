@@ -79,6 +79,13 @@ func OrderMatters(orderMatters bool) ServerOption {
 	}
 }
 
+// AutoReconnect with mqtt client autoReconnect.
+func (s *Server) AutoReconnect(autoReconnect bool) ServerOption {
+	return func(s *Server) {
+		s.clientOption.SetAutoReconnect(autoReconnect)
+	}
+}
+
 // Logger with server logger.
 func Logger(logger log.Logger) ServerOption {
 	return func(s *Server) {
