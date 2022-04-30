@@ -100,6 +100,20 @@ func Logger(logger log.Logger) ServerOption {
 	}
 }
 
+// ConnectLostHandler with mqtt client connectLostHandler.
+func ConnectLost(connectLostHandler pmqtt.ConnectionLostHandler) ServerOption {
+	return func(s *Server) {
+		s.connectLost = connectLostHandler
+	}
+}
+
+// OnConnectHandler with mqtt client onConnectHandler.
+func OnConnect(onConnectHandler pmqtt.OnConnectHandler) ServerOption {
+	return func(s *Server) {
+		s.onConnect = onConnectHandler
+	}
+}
+
 type Server struct {
 	log                *log.Helper
 	clientOption       *pmqtt.ClientOptions
@@ -107,6 +121,8 @@ type Server struct {
 	subscribes         []func(*Server)
 	subscribeMultiples []func(*Server)
 	disconnectQuiesce  uint
+	connectLost        pmqtt.ConnectionLostHandler
+	onConnect          pmqtt.OnConnectHandler
 }
 
 // NewServer creates an MQTT server by options.
@@ -141,15 +157,15 @@ func (s *Server) SubscribeMultiple(filters map[string]byte, callback pmqtt.Messa
 func (s *Server) Start(ctx context.Context) error {
 
 	s.clientOption.SetConnectionLostHandler(func(c pmqtt.Client, err error) {
-		//TODO: 统计错误次数
-		log.Error(err)
-		s.log.Debugf("mqtt connection lost: %v", c)
+		if s.connectLost != nil {
+			s.connectLost(c, err)
+		}
 	})
 
 	s.clientOption.SetOnConnectHandler(func(c pmqtt.Client) {
-		// TODO: 统计重连次数
-		s.log.Info("mqtt onConnect")
-		s.log.Debugf("mqtt onConnect: %v", c)
+		if s.onConnect != nil {
+			s.onConnect(c)
+		}
 		// 订阅topic
 		s.subscribe()
 	})
