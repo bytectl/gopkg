@@ -100,29 +100,25 @@ func Logger(logger log.Logger) ServerOption {
 	}
 }
 
-// ConnectLostHandler with mqtt client connectLostHandler.
-func ConnectLost(connectLostHandler pmqtt.ConnectionLostHandler) ServerOption {
+// ConnectionLostHandler with mqtt client connectLostHandler.
+func ConnectionLostHandler(connectLostHandler pmqtt.ConnectionLostHandler) ServerOption {
 	return func(s *Server) {
-		s.connectLost = connectLostHandler
+		s.clientOption.SetConnectionLostHandler(connectLostHandler)
 	}
 }
 
 // OnConnectHandler with mqtt client onConnectHandler.
-func OnConnect(onConnectHandler pmqtt.OnConnectHandler) ServerOption {
+func OnConnectHandler(onConnectHandler pmqtt.OnConnectHandler) ServerOption {
 	return func(s *Server) {
-		s.onConnect = onConnectHandler
+		s.clientOption.SetOnConnectHandler(onConnectHandler)
 	}
 }
 
 type Server struct {
-	log                *log.Helper
-	clientOption       *pmqtt.ClientOptions
-	mqttClient         pmqtt.Client
-	subscribes         []func(*Server)
-	subscribeMultiples []func(*Server)
-	disconnectQuiesce  uint
-	connectLost        pmqtt.ConnectionLostHandler
-	onConnect          pmqtt.OnConnectHandler
+	log               *log.Helper
+	clientOption      *pmqtt.ClientOptions
+	mqttClient        pmqtt.Client
+	disconnectQuiesce uint
 }
 
 // NewServer creates an MQTT server by options.
@@ -138,37 +134,8 @@ func NewServer(opts ...ServerOption) *Server {
 	return srv
 }
 
-// Subscribe with mqtt client subscribe. must be called before Start.
-func (s *Server) Subscribe(topic string, qos byte, callback pmqtt.MessageHandler) {
-	fn := func(srv *Server) {
-		srv.mqttClient.Subscribe(topic, qos, callback)
-	}
-	s.subscribes = append(s.subscribes, fn)
-}
-
-// SubscribeMultiple with mqtt client subscribeMultiple. must be called before Start.
-func (s *Server) SubscribeMultiple(filters map[string]byte, callback pmqtt.MessageHandler) {
-	fn := func(srv *Server) {
-		srv.mqttClient.SubscribeMultiple(filters, callback)
-	}
-	s.subscribeMultiples = append(s.subscribeMultiples, fn)
-}
-
 func (s *Server) Start(ctx context.Context) error {
 
-	s.clientOption.SetConnectionLostHandler(func(c pmqtt.Client, err error) {
-		if s.connectLost != nil {
-			s.connectLost(c, err)
-		}
-	})
-
-	s.clientOption.SetOnConnectHandler(func(c pmqtt.Client) {
-		if s.onConnect != nil {
-			s.onConnect(c)
-		}
-		// 订阅topic
-		s.subscribe()
-	})
 	if s.mqttClient == nil {
 		s.mqttClient = pmqtt.NewClient(s.clientOption)
 	}
@@ -178,16 +145,6 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (s *Server) subscribe() {
-	// subscribe mqtt topic
-	for _, fn := range s.subscribes {
-		fn(s)
-	}
-	for _, fn := range s.subscribeMultiples {
-		fn(s)
-	}
 }
 
 func (s *Server) Stop(ctx context.Context) error {
