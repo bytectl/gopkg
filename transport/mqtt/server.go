@@ -86,6 +86,13 @@ func AutoReconnect(autoReconnect bool) ServerOption {
 	}
 }
 
+// DisconnectQuiesce with mqtt client disconnectQuiesce.
+func DisconnectQuiesce(quiesce uint) ServerOption {
+	return func(s *Server) {
+		s.disconnectQuiesce = quiesce
+	}
+}
+
 // Logger with server logger.
 func Logger(logger log.Logger) ServerOption {
 	return func(s *Server) {
@@ -99,6 +106,7 @@ type Server struct {
 	mqttClient         pmqtt.Client
 	subscribes         []func(*Server)
 	subscribeMultiples []func(*Server)
+	disconnectQuiesce  uint
 }
 
 // NewServer creates an MQTT server by options.
@@ -168,6 +176,6 @@ func (s *Server) subscribe() {
 
 func (s *Server) Stop(ctx context.Context) error {
 	s.log.Info("[mqtt] server stopping")
-	s.mqttClient.Disconnect(250)
+	s.mqttClient.Disconnect(s.disconnectQuiesce)
 	return nil
 }
