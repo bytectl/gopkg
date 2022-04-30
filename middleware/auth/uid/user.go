@@ -2,7 +2,9 @@ package uid
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 )
@@ -11,6 +13,11 @@ type uidKey struct{}
 
 const (
 	authUserKey string = "X-Auth-User"
+	reason      string = "UNAUTHORIZED"
+)
+
+var (
+	ErrWrongContext = errors.Unauthorized(reason, fmt.Sprintf("can't get authUserKey(%s) data from header", authUserKey))
 )
 
 type UserData struct {
@@ -28,6 +35,8 @@ func Server() middleware.Middleware {
 					ctx = NewContext(ctx, UserData{
 						ID: id,
 					})
+				} else {
+					return nil, ErrWrongContext
 				}
 			}
 			return handler(ctx, req)
