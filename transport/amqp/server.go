@@ -100,7 +100,7 @@ func OnConnectHandler(fn OnConnect) ServerOption {
 }
 
 // ConnectionLostHandler is called when the server is disconnected from the client.
-func (s *Server) ConnectLostHandler(fn ConnectionLost) ServerOption {
+func (s *Server) ConnectionLostHandler(fn ConnectionLost) ServerOption {
 	return func(s *Server) {
 		s.connectionLost = fn
 	}
