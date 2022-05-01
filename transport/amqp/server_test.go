@@ -1,4 +1,4 @@
-package mqtt
+package amqp
 
 import (
 	"context"
@@ -6,15 +6,9 @@ import (
 	"time"
 )
 
-type testKey struct{}
-
-type testData struct {
-	Path string `json:"path"`
-}
-
 func TestServer(t *testing.T) {
 	ctx := context.Background()
-	srv := NewServer(Broker("tcp://127.0.0.1:11183"))
+	srv := NewServer(Url("amqp://guest:guest@localhost:5672/"))
 
 	go func() {
 		if err := srv.Start(ctx); err != nil {
