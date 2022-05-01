@@ -159,9 +159,12 @@ func (s *Server) connNotifyClose(ctx context.Context) {
 		select {
 		case err := <-s.notifyCloseChan:
 			s.log.Errorf("[amqp] conn closed,error(%v)", err)
+			// call connectionLost
+			s.connectionLost(s.amqpConn, err)
+			// close amqpConn
 			s.amqpConn.Close()
 			s.amqpConn = nil
-			s.connectionLost(s.amqpConn, err)
+			// reconnect
 			go s.reconnect(ctx)
 		case <-ctx.Done():
 			s.log.Info("[amqp] conn notifyClose done")
