@@ -161,11 +161,8 @@ func (s *Server) connNotifyClose(ctx context.Context) {
 			s.log.Errorf("[amqp] conn closed,error(%v)", err)
 			// call connectionLost
 			s.connectionLost(s.amqpConn, err)
-			// close amqpConn
-			s.amqpConn.Close()
-			s.amqpConn = nil
 			// reconnect
-			go s.reconnect(ctx)
+			s.reconnect(ctx)
 		case <-ctx.Done():
 			s.log.Info("[amqp] conn notifyClose done")
 			return
@@ -174,6 +171,8 @@ func (s *Server) connNotifyClose(ctx context.Context) {
 }
 func (s *Server) reconnect(ctx context.Context) {
 	s.log.Info("try reconnect amqp server")
+	// renew chan
+	s.notifyCloseChan = make(chan *ramqp.Error)
 	for {
 		select {
 		case <-ctx.Done():
