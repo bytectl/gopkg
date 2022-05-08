@@ -108,15 +108,15 @@ func (r *Router) putParams(ps *Params) {
 
 func (r *Router) makeSubscribeTopic(topic string) string {
 	dirs := strings.Split(topic, "/")
-	for _, dir := range dirs {
+	for i, dir := range dirs {
 		if dir == "" {
 			continue
 		}
 		if dir[0] == ':' {
-			dir = "+"
+			dirs[i] = "+"
 		}
 		if dir[0] == '*' {
-			dir = "#"
+			dirs[i] = "#"
 		}
 	}
 	return strings.Join(dirs, "/")
