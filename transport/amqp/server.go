@@ -3,6 +3,7 @@ package amqp
 import (
 	"context"
 	"crypto/tls"
+	"net"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -125,8 +126,20 @@ type Server struct {
 
 // NewServer creates an MQTT server by options.
 func NewServer(opts ...ServerOption) *Server {
+	dail := func(network, addr string) (net.Conn, error) {
+		conn, err := net.DialTimeout(network, addr, 2*time.Second)
+		if err != nil {
+			return nil, err
+		}
+		if err := conn.SetDeadline(time.Now().Add(2 * time.Second)); err != nil {
+			return nil, err
+		}
+		return conn, nil
+	}
 	srv := &Server{
-		config:            &ramqp.Config{},
+		config: &ramqp.Config{
+			Dial: dail,
+		},
 		log:               log.NewHelper(log.GetLogger()),
 		notifyCloseChan:   make(chan *ramqp.Error),
 		reconnectInterval: time.Second * 5,
