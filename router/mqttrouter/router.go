@@ -185,9 +185,13 @@ func (r *Router) serveMQTT(c mqtt.Client, msg mqtt.Message) {
 		}
 		return
 	}
-	ctx := context.WithValue(context.Background(), ParamsKey, ps)
+
 	if ps != nil {
+		ctx := context.WithValue(context.Background(), ParamsKey, ps)
+		handle(ctx, c, msg)
+		// note: handle must before putParams
 		r.putParams(ps)
+	} else {
+		handle(context.Background(), c, msg)
 	}
-	handle(ctx, c, msg)
 }
