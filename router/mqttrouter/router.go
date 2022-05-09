@@ -73,8 +73,8 @@ var ParamsKey = paramsKey{}
 
 // ParamsFromContext pulls the URL parameters from a request context,
 // or returns nil if none are present.
-func ParamsFromContext(ctx context.Context) Params {
-	p, _ := ctx.Value(ParamsKey).(Params)
+func ParamsFromContext(ctx context.Context) map[string]string {
+	p, _ := ctx.Value(ParamsKey).(map[string]string)
 	return p
 }
 
@@ -187,7 +187,14 @@ func (r *Router) serveMQTT(c mqtt.Client, msg mqtt.Message) {
 	}
 
 	if ps != nil {
-		ctx := context.WithValue(context.Background(), ParamsKey, *ps)
+		varmap := make(map[string]string)
+		for _, p := range *ps {
+			if p.Key == "" {
+				continue
+			}
+			varmap[p.Key] = p.Value
+		}
+		ctx := context.WithValue(context.Background(), ParamsKey, varmap)
 		handle(ctx, c, msg)
 		// note: handle must before putParams
 		r.putParams(ps)
