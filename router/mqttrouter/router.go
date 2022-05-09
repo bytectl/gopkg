@@ -136,7 +136,7 @@ func (r *Router) Handle(topic string, qos byte, handle Handle) {
 	// subscribe to topic
 	subscribeTopic := r.makeSubscribeTopic(topic)
 	r.Client.Subscribe(subscribeTopic, qos, r.serveMQTT)
-	log.Debugf("mqttrouter: subscribed to topic %s", subscribeTopic)
+	log.Debugf("[mqttrouter] subscribe to topic: %s", subscribeTopic)
 	// drop share-subscribe fields
 	if strings.HasPrefix(topic, "$share/") {
 		topic = strings.Join(strings.Split(topic, "/")[2:], "/")
