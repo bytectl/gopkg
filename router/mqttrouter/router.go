@@ -179,6 +179,7 @@ func (r *Router) serveMQTT(c mqtt.Client, msg mqtt.Message) {
 		return
 	}
 	handle, ps, _ := r.root.getValue(topic, r.getParams)
+	log.Debugf("[mqttrouter] topic: %s, params: %v", topic, ps)
 	if handle == nil {
 		if r.NotFoundHandle != nil {
 			r.NotFoundHandle(context.Background(), c, msg)
