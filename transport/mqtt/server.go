@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/bytectl/gopkg/router/mqttrouter"
 	pmqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
@@ -113,12 +114,18 @@ func OnConnectHandler(onConnectHandler pmqtt.OnConnectHandler) ServerOption {
 		s.clientOption.SetOnConnectHandler(onConnectHandler)
 	}
 }
+func Router(router *mqttrouter.Router) ServerOption {
+	return func(s *Server) {
+		s.router = router
+	}
+}
 
 type Server struct {
 	log               *log.Helper
 	clientOption      *pmqtt.ClientOptions
 	mqttClient        pmqtt.Client
 	disconnectQuiesce uint
+	router            *mqttrouter.Router
 }
 
 // NewServer creates an MQTT server by options.
