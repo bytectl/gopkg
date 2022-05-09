@@ -206,9 +206,9 @@ walk:
 		}
 
 		// Otherwise add handle to current node
-		if n.handle != nil {
-			panic("a handle is already registered for path '" + fullPath + "'")
-		}
+		// if n.handle != nil {
+		// 	panic("a handle is already registered for path '" + fullPath + "'")
+		// }
 		n.handle = handle
 		return
 	}
