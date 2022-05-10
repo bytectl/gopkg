@@ -44,7 +44,6 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 		reply, err := srv.{{.Name}}(ctx, &in)
 		if err != nil {
 			log.Error("{{.Name}} error:", err)
-			return
 		}
 		if reply == nil {
 			return
