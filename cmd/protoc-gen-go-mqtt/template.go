@@ -11,27 +11,27 @@ var mqttTemplate = `
 {{$svrName := .ServiceName}}
 type {{.ServiceType}}MQTTServer interface {
 {{- range .MethodSets}}
-	{{.Name}}(context.Context, paho_mqtt_golang.Client, paho_mqtt_golang.Message, *{{.Request}}) (*{{.Reply}}, error)
+	{{.Name}}(mqtt.Context,*{{.Request}}) (*{{.Reply}}, error)
 {{- end}}
 }
 
-func Register{{.ServiceType}}MQTTServer(r *mqttrouter.Router, srv {{.ServiceType}}MQTTServer) {
+func Register{{.ServiceType}}MQTTServer(r *mqtt.Router, srv {{.ServiceType}}MQTTServer) {
 	{{- range .Methods}}
 	r.Handle("{{.Path}}", 0, _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv))
 	{{- end}}
 }
 
 {{range .Methods}}
-func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) func(context.Context, paho_mqtt_golang.Client, paho_mqtt_golang.Message)  {
-	return func(ctx context.Context, c paho_mqtt_golang.Client, msg paho_mqtt_golang.Message)  {
+func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) func(mqtt.Context)  {
+	return func(ctx mqtt.Context)  {
 		var in {{.Request}}
-		vars := mqttrouter.ParamsFromContext(ctx)
+		vars := mqtt.ParamsFromContext(ctx)
 		bs, _ := json.Marshal(vars)
 		err := json.Unmarshal(bs, &in)
 		if err != nil {
 			log.Error("var Params error:", err)
 		}
-		err = json.Unmarshal(msg.Payload(), &in)
+		err = json.Unmarshal(ctx.Message().Payload(), &in)
 		if err != nil {
 			log.Error("message error:", err)
 			return
@@ -41,7 +41,7 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 			log.Error("validate error:", err)
 			return
 		}
-		reply, err := srv.{{.Name}}(ctx, c, msg, &in)
+		reply, err := srv.{{.Name}}(ctx, &in)
 		if err != nil {
 			log.Error("{{.Name}} error:", err)
 			return
@@ -51,12 +51,12 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 		}
 		bs, err = json.Marshal(reply)
 		if err != nil {
-			log.Errorf("topic:%v, err: %v", msg.Topic(), err)
+			log.Errorf("topic:%v, err: %v", ctx.Message().Topic(), err)
 			return
 		} else {
-			log.Debugf("reply mqtt topic:%v,body: %v", msg.Topic(), string(bs))
+			log.Debugf("reply mqtt topic:%v,body: %v", ctx.Message().Topic(), string(bs))
 		}
-		c.Publish(msg.Topic() + "_reply", 0, false, bs)
+		ctx.Client().Publish(ctx.Message().Topic() + "_reply", 0, false, bs)
 	}
 }
 {{end}}
