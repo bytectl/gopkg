@@ -90,7 +90,7 @@ type Router struct {
 
 // New returns a new initialized Router.
 // topic auto-correction, including trailing slashes, is enabled by default.
-func New() *Router {
+func NewRouter() *Router {
 	return &Router{}
 }
 
