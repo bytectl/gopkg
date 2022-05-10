@@ -28,7 +28,7 @@
 //  // by the index of the parameter. This way you can also get the name (key)
 //  thirdKey   := ps[2].Key   // the name of the 3rd parameter
 //  thirdValue := ps[2].Value // the value of the 3rd parameter
-package mqttrouter
+package mqtt
 
 import (
 	"context"
@@ -42,7 +42,7 @@ import (
 // Handle is a function that can be registered to a route to handle HTTP
 // requests. Like http.HandlerFunc, but has a third parameter for the values of
 // wildcards (topic variables).
-type Handle func(context.Context, mqtt.Client, mqtt.Message)
+type Handle func(Context)
 
 // Param is a single URL parameter, consisting of a key and a value.
 type Param struct {
@@ -125,10 +125,10 @@ func (r *Router) makeSubscribeTopic(topic string) string {
 // Handle registers the handler for the given pattern.
 func (r *Router) Handle(topic string, qos byte, handle Handle) {
 	if r.Client == nil {
-		panic("mqttrouter: router not initialized, not connected to mqtt broker")
+		panic("router: router not initialized, not connected to mqtt broker")
 	}
 	if len(topic) < 1 {
-		panic("mqttrouter: topic must not be empty")
+		panic("router: topic must not be empty")
 	}
 	if handle == nil {
 		panic("handle must not be nil")
@@ -136,7 +136,7 @@ func (r *Router) Handle(topic string, qos byte, handle Handle) {
 	// subscribe to topic
 	subscribeTopic := r.makeSubscribeTopic(topic)
 	r.Client.Subscribe(subscribeTopic, qos, r.serveMQTT)
-	log.Debugf("[mqttrouter] subscribe to topic: %s", subscribeTopic)
+	log.Debugf("[router] subscribe to topic: %s", subscribeTopic)
 	// drop share-subscribe fields
 	if strings.HasPrefix(topic, "$share/") {
 		topic = strings.Join(strings.Split(topic, "/")[2:], "/")
@@ -172,16 +172,18 @@ func (r *Router) serveMQTT(c mqtt.Client, msg mqtt.Message) {
 		// fix
 		topic = "/" + topic
 	}
+	ctx := WithContext(context.Background())
+	ctx.Reset(c, msg)
 	if r.root == nil {
 		if r.NotFoundHandle != nil {
-			r.NotFoundHandle(context.Background(), c, msg)
+			r.NotFoundHandle(ctx)
 		}
 		return
 	}
 	handle, ps, _ := r.root.getValue(topic, r.getParams)
 	if handle == nil {
 		if r.NotFoundHandle != nil {
-			r.NotFoundHandle(context.Background(), c, msg)
+			r.NotFoundHandle(ctx)
 		}
 		return
 	}
@@ -194,11 +196,12 @@ func (r *Router) serveMQTT(c mqtt.Client, msg mqtt.Message) {
 			}
 			varmap[p.Key] = p.Value
 		}
-		ctx := context.WithValue(context.Background(), ParamsKey, varmap)
-		handle(ctx, c, msg)
+		ctx = WithContext(context.WithValue(context.Background(), ParamsKey, varmap))
+		ctx.Reset(c, msg)
+		handle(ctx)
 		// note: handle must before putParams
 		r.putParams(ps)
 	} else {
-		handle(context.Background(), c, msg)
+		handle(ctx)
 	}
 }

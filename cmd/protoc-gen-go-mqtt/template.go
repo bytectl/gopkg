@@ -11,19 +11,19 @@ var mqttTemplate = `
 {{$svrName := .ServiceName}}
 type {{.ServiceType}}MQTTServer interface {
 {{- range .MethodSets}}
-	{{.Name}}(context.Context, c mqtt.Client, *{{.Request}}) (*{{.Reply}}, error)
+	{{.Name}}(context.Context, paho_mqtt_golang.Client, paho_mqtt_golang.Message, *{{.Request}}) (*{{.Reply}}, error)
 {{- end}}
 }
 
-func Register{{.ServiceType}}MQTTServer(s *mqtt.Server, srv {{.ServiceType}}MQTTServer) {
+func Register{{.ServiceType}}MQTTServer(r *mqttrouter.Router, srv {{.ServiceType}}MQTTServer) {
 	{{- range .Methods}}
 	r.Handle("{{.Path}}", 0, _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv))
 	{{- end}}
 }
 
 {{range .Methods}}
-func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) func(context.Context, mqtt.Client, mqtt.Message)  {
-	return func(context.Context, mqtt.Client, mqtt.Message)  {
+func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) func(context.Context, paho_mqtt_golang.Client, paho_mqtt_golang.Message)  {
+	return func(ctx context.Context, c paho_mqtt_golang.Client, msg paho_mqtt_golang.Message)  {
 		var in {{.Request}}
 		vars := mqttrouter.ParamsFromContext(ctx)
 		bs, _ := json.Marshal(vars)
@@ -41,7 +41,22 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 			log.Error("validate error:", err)
 			return
 		}
-		srv.{{.Name}}(ctx, c, in)
+		reply, err := srv.{{.Name}}(ctx, c, msg, &in)
+		if err != nil {
+			log.Error("{{.Name}} error:", err)
+			return
+		}
+		if reply == nil {
+			return
+		}
+		bs, err = json.Marshal(reply)
+		if err != nil {
+			log.Errorf("topic:%v, err: %v", msg.Topic(), err)
+			return
+		} else {
+			log.Debugf("reply mqtt topic:%v,body: %v", msg.Topic(), string(bs))
+		}
+		c.Publish(msg.Topic() + "_reply", 0, false, bs)
 	}
 }
 {{end}}
