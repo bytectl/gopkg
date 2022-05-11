@@ -32,6 +32,7 @@ package mqtt
 
 import (
 	"context"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -73,8 +74,8 @@ var ParamsKey = paramsKey{}
 
 // ParamsFromContext pulls the URL parameters from a request context,
 // or returns nil if none are present.
-func ParamsFromContext(ctx context.Context) map[string]string {
-	p, _ := ctx.Value(ParamsKey).(map[string]string)
+func ParamsFromContext(ctx context.Context) url.Values {
+	p, _ := ctx.Value(ParamsKey).(url.Values)
 	return p
 }
 
@@ -189,14 +190,14 @@ func (r *Router) serveMQTT(c mqtt.Client, msg mqtt.Message) {
 	}
 
 	if ps != nil {
-		varmap := make(map[string]string)
+		varValues := make(url.Values)
 		for _, p := range *ps {
 			if p.Key == "" {
 				continue
 			}
-			varmap[p.Key] = p.Value
+			varValues.Add(p.Key, p.Value)
 		}
-		ctx = WithContext(context.WithValue(context.Background(), ParamsKey, varmap))
+		ctx = WithContext(context.WithValue(context.Background(), ParamsKey, varValues))
 		ctx.Reset(c, msg)
 		handle(ctx)
 		// note: handle must before putParams
