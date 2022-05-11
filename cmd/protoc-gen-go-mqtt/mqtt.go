@@ -18,6 +18,8 @@ const (
 	contextPackage  = protogen.GoImportPath("context")
 	mqttPackage     = protogen.GoImportPath("github.com/bytectl/gopkg/transport/mqtt")
 	encodingPackage = protogen.GoImportPath("github.com/go-kratos/kratos/v2/encoding")
+	jsonPackage     = protogen.GoImportPath("github.com/go-kratos/kratos/v2/encoding/json")
+	formPackage     = protogen.GoImportPath("github.com/go-kratos/kratos/v2/encoding/form")
 	logPackage      = protogen.GoImportPath("github.com/go-kratos/kratos/v2/log")
 )
 
@@ -48,10 +50,13 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "mqtt", GoImportPath: mqttPackage})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "encoding", GoImportPath: encodingPackage})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "log", GoImportPath: logPackage})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "json", GoImportPath: jsonPackage})
+	g.QualifiedGoIdent(protogen.GoIdent{GoName: "form", GoImportPath: formPackage})
 	g.P("// This is a compile-time assertion to ensure that this generated file")
 	g.P("// is compatible with the kratos package it is being compiled against.")
 	g.P("var _ = new(", contextPackage.Ident("Context"), ")")
-	g.P("var json =", encodingPackage.Ident(`GetCodec("json")`))
+	g.P("var jsonCodec =", encodingPackage.Ident("GetCodec(json.Name)"))
+	g.P("var formCodec =", encodingPackage.Ident("GetCodec(form.Name)"))
 	g.P()
 
 	for _, service := range file.Services {

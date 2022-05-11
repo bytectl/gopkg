@@ -25,16 +25,15 @@ func Register{{.ServiceType}}MQTTServer(r *mqtt.Router, srv {{.ServiceType}}MQTT
 func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) func(mqtt.Context)  {
 	return func(ctx mqtt.Context)  {
 		var in {{.Request}}
-		vars := mqtt.ParamsFromContext(ctx)
-		bs, _ := json.Marshal(vars)
-		err := json.Unmarshal(bs, &in)
-		if err != nil {
-			log.Error("var Params error:", err)
-		}
-		err = json.Unmarshal(ctx.Message().Payload(), &in)
+		err := jsonCodec.Unmarshal(ctx.Message().Payload(), &in)
 		if err != nil {
 			log.Error("message error:", err)
 			return
+		}
+		vars := mqtt.ParamsFromContext(ctx)
+		err = formCodec.Unmarshal([]byte(vars.Encode()), &in)
+		if err != nil {
+			log.Error("var Params error:", err)
 		}
 		err = in.Validate()
 		if err != nil {
@@ -48,7 +47,7 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 		if reply == nil {
 			return
 		}
-		bs, err = json.Marshal(reply)
+		bs, err := jsonCodec.Marshal(reply)
 		if err != nil {
 			log.Errorf("topic:%v, err: %v", ctx.Message().Topic(), err)
 			return

@@ -1,9 +1,9 @@
-module github.com/go-kratos/kratos/cmd/protoc-gen-go-mqtt/v2
+module github.com/bytectl/gopkg/cmd/protoc-gen-go-mqtt/v2
 
 go 1.16
 
 require (
-	github.com/go-kratos/kratos/v2 v2.2.0
-	google.golang.org/genproto v0.0.0-20220126215142-9970aeb2e350
-	google.golang.org/protobuf v1.27.1
+	github.com/google/go-cmp v0.5.6 // indirect
+	google.golang.org/genproto v0.0.0-20220324131243-acbaeb5b85eb
+	google.golang.org/protobuf v1.28.0
 )
