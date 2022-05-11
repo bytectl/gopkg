@@ -142,6 +142,7 @@ func (r *Router) Handle(topic string, qos byte, handle Handle) {
 		topic = strings.Join(strings.Split(topic, "/")[2:], "/")
 	}
 	topic = strings.TrimPrefix(topic, "$queue/")
+	topic = strings.TrimPrefix(topic, "$SYS")
 	if topic[0] != '/' {
 		// fix
 		topic = "/" + topic
@@ -168,6 +169,7 @@ func (r *Router) Handle(topic string, qos byte, handle Handle) {
 // ServeMQTT makes the router implement the mqtt.MessageHandle interface.
 func (r *Router) serveMQTT(c mqtt.Client, msg mqtt.Message) {
 	topic := msg.Topic()
+	topic = strings.TrimPrefix(topic, "$SYS")
 	if topic[0] != '/' {
 		// fix
 		topic = "/" + topic
