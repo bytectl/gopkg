@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"google.golang.org/genproto/googleapis/api/annotations"
@@ -14,7 +13,7 @@ import (
 
 var methodSets = make(map[string]int)
 
-// generateFile generates a _http.pb.go file containing kratos errors definitions.
+// generateFile generates a .http file containing  errors definitions.
 func generateFile(gen *protogen.Plugin, file *protogen.File, omitempty bool) *protogen.GeneratedFile {
 	if len(file.Services) == 0 || (omitempty && !hasHTTPRule(file.Services)) {
 		return nil
@@ -28,7 +27,7 @@ func generateFile(gen *protogen.Plugin, file *protogen.File, omitempty bool) *pr
 	return g
 }
 
-// generateFileContent generates the kratos errors definitions, excluding the package statement.
+// generateFileContent generates   errors definitions, excluding the package statement.
 func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.GeneratedFile, omitempty bool) {
 	if len(file.Services) == 0 {
 		return
@@ -189,20 +188,6 @@ func toPathParamString(params map[string]string) string {
 		ps = append(ps, fmt.Sprintf("%s=%s", k, v))
 	}
 	return strings.Join(ps, "&")
-}
-
-func replacePath(name string, value string, path string) string {
-	pattern := regexp.MustCompile(fmt.Sprintf(`(?i){([\s]*%s[\s]*)=?([^{}]*)}`, name))
-	idx := pattern.FindStringIndex(path)
-	if len(idx) > 0 {
-		path = fmt.Sprintf("%s{%s:%s}%s",
-			path[:idx[0]], // The start of the match
-			name,
-			strings.ReplaceAll(value, "*", ".*"),
-			path[idx[1]:],
-		)
-	}
-	return path
 }
 
 func camelCaseVars(s string) string {
