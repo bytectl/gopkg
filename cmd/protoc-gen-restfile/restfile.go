@@ -135,15 +135,13 @@ func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path
 	defer func() { methodSets[m.GoName]++ }()
 
 	fields := m.Input.Desc.Fields()
-
 	comment := trimComment(m.Comments.Leading.String())
-
 	param := map[string]string{}
 
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
 		value := fd.Kind().String()
-		comment = trimComment(m.Input.Fields[i].Comments.Leading.String())
+		comment := trimComment(m.Input.Fields[i].Comments.Leading.String())
 		if comment != "" && method != "GET" && method != "DELETE" {
 			value += " " + comment
 		}
