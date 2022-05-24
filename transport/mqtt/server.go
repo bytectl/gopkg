@@ -142,7 +142,11 @@ func NewServer(opts ...ServerOption) *Server {
 
 func (s *Server) Start(ctx context.Context) error {
 	s.log.Info("[mqtt] server starting")
-	if token := s.mqttClient.Connect(); !token.WaitTimeout(1*time.Second) || token.Error() != nil {
+	token := s.mqttClient.Connect()
+	if !token.WaitTimeout(1 * time.Second) {
+		panic("mqtt connect wait timeout, address: " + s.clientOption.Servers[0].String())
+	}
+	if token.Error() != nil {
 		panic("mqtt connect error, " + token.Error().Error())
 	}
 	return nil
