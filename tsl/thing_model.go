@@ -51,7 +51,7 @@ type Event struct {
 	Desc       string     `json:"desc"`
 	Method     string     `json:"method"`
 	Type       string     `json:"type"`
-	OutputData []Property `json:"outputData"`
+	InputData  []Property `json:"outputData"`
 }
 
 type Service struct {
@@ -92,7 +92,7 @@ func (tm *ThingModel) addDefault() {
 		Desc:       "属性上报",
 		Method:     "thing.event.property.post",
 		Type:       "info",
-		OutputData: tm.Properties,
+		InputData:  tm.Properties,
 	})
 
 	// 添加属性设置服务
@@ -128,7 +128,7 @@ type ValidateEvent struct {
 	Desc       string
 	Method     string
 	Type       string
-	OutputData map[string]Property
+	InputData  map[string]Property
 }
 type ValidateService struct {
 	Identifier string
@@ -168,7 +168,7 @@ func (tm *ThingModel) ToValidateModel() *ValidateModel {
 			Desc:       v.Desc,
 			Method:     v.Method,
 			Type:       v.Type,
-			OutputData: propertiesToMap(v.OutputData),
+			InputData:  propertiesToMap(v.InputData),
 		}
 	}
 	for _, v := range tm.Services {
@@ -209,14 +209,14 @@ func (vm *ValidateModel) ServiceValidate(identifier string, inputParams string, 
 }
 
 // 事件校验
-func (vm *ValidateModel) EventValidate(identifier string, outputParams string) (bool, error) {
+func (vm *ValidateModel) EventValidate(identifier string, inputParams string) (bool, error) {
 	result := false
 	event, ok := vm.Events[identifier]
 	if !ok {
 		return result, fmt.Errorf("事件identifier: %s不存在", identifier)
 	}
-	if outputParams != "" {
-		b, err := vm.validateParams(event.OutputData, outputParams)
+	if inputParams != "" {
+		b, err := vm.validateParams(event.InputData, inputParams)
 		if !b {
 			return result, err
 		}

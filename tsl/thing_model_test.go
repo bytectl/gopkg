@@ -60,7 +60,7 @@ func TestValidateThingModel(t *testing.T) {
       "params": {
         "countDown": 0,
         "order": "test",
-        "switch": 0,
+        "switch": 0
       },
       "timestamp": "123",
       "version": "1.0"
