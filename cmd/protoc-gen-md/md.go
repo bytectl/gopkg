@@ -140,8 +140,8 @@ func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path
 	comment := trimComment(m.Comments.Leading.String())
 	paramString := ""
 	pathParamString := ""
-	param := fieldsToMap(m.Input, method)
-	responseParams := fieldsToMap(m.Output, method)
+	param := fieldsToMap(m.Input, method, 0)
+	responseParams := fieldsToMap(m.Output, method, 1)
 
 	if len(param) != 0 {
 		if method == "GET" || method == "DELETE" {
@@ -151,9 +151,11 @@ func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path
 			paramString = string(bs)
 		}
 	}
-
-	bs, _ := json.MarshalIndent(responseParams, "", "  ")
-	responseParamsString := string(bs)
+	responseParamsString := ""
+	if len(responseParams) != 0 {
+		bs, _ := json.MarshalIndent(responseParams, "", "  ")
+		responseParamsString = string(bs)
+	}
 
 	return &methodDesc{
 		Name:           m.GoName,
@@ -167,16 +169,23 @@ func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path
 	}
 }
 
-func fieldsToMap(message *protogen.Message, method string) map[string]string {
+func fieldsToMap(message *protogen.Message, method string, ptype int32) map[string]string {
 	fields := message.Desc.Fields()
 	param := map[string]string{}
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
 		value := fd.Kind().String()
 		comment := trimComment(message.Fields[i].Comments.Leading.String())
-		if comment != "" && method != "GET" && method != "DELETE" {
-			value += " " + comment
+		if comment != "" {
+			if ptype == 0 {
+				if method != "GET" && method != "DELETE" {
+					value += " " + comment
+				}
+			} else {
+				value += " " + comment
+			}
 		}
+
 		param[fd.JSONName()] = value
 
 		// if fd.IsMap() {

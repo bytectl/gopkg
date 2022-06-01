@@ -22,7 +22,7 @@ CODEBLOCK{{else}}无{{end}}
 NEWLINE
 - 返回参数
 NEWLINE
-{{if .ResponseBody}}CODEBLOCKjson
+{{if .ResponseParams}}CODEBLOCKjson
 {{.ResponseParams}}
 CODEBLOCK{{else}}无{{end}}
 NEWLINE
