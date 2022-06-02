@@ -145,7 +145,10 @@ func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path
 		comment = trimComment(comments[0])
 	} else if len(comments) > 1 {
 		comment = trimComment(comments[0])
-		description = trimComment(strings.Join(comments[1:], "\n"))
+		for i := 1; i < len(comments); i++ {
+			comments[i] = strings.Trim(comments[i], " ")
+		}
+		description = strings.Trim(strings.Join(comments[1:], "\n"), " ")
 	}
 
 	paramString := ""
