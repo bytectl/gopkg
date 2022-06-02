@@ -12,7 +12,7 @@ var restTemplate = `
 
 ### {{.Comment}}
 
-- 请求路径: INNERLINEBLOCK{{.Method}} {{.Path}}{{.PathParams}}INNERLINEBLOCK
+- 请求路径: INNERLINEBLOCK{{.Method}} {{.Path}}INNERLINEBLOCK
 - 请求参数
 NEWLINE
 {{if .Params}}CODEBLOCKjson
