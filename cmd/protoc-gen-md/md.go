@@ -138,7 +138,16 @@ func buildHTTPRule(g *protogen.GeneratedFile, m *protogen.Method, rule *annotati
 func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path string) *methodDesc {
 	defer func() { methodSets[m.GoName]++ }()
 
-	comment := trimComment(m.Comments.Leading.String())
+	comments := strings.Split(string(m.Comments.Leading), "\n")
+	comment := ""
+	description := ""
+	if len(comments) == 1 {
+		comment = trimComment(comments[0])
+	} else if len(comments) > 1 {
+		comment = trimComment(comments[0])
+		description = trimComment(strings.Join(comments[1:], "\n"))
+	}
+
 	paramString := ""
 	pathParamString := ""
 	param := fieldsToMap(m.Input, method, 0)
@@ -162,6 +171,7 @@ func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path
 		Name:           m.GoName,
 		Num:            methodSets[m.GoName],
 		Comment:        comment,
+		Description:    description,
 		Params:         paramString,
 		PathParams:     pathParamString,
 		Path:           path,

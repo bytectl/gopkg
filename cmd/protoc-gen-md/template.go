@@ -11,7 +11,9 @@ var restTemplate = `
 {{- range .Methods}}
 
 ### {{.Comment}}
-
+{{if .Description}}
+{{.Description}}
+{{end}}
 - 请求路径: INNERLINEBLOCK{{.Method}} {{.Path}}INNERLINEBLOCK
 - 请求参数
 NEWLINE
@@ -51,6 +53,7 @@ type methodDesc struct {
 	// method
 	Name           string
 	Comment        string
+	Description    string
 	Params         string
 	ResponseParams string
 	PathParams     string
