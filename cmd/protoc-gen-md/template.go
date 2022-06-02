@@ -10,10 +10,9 @@ var restTemplate = `
 {{$hostString := .HostString}}
 {{- range .Methods}}
 
-### {{.Path}}
+### {{.Comment}}
 
-{{.Comment}}
-
+- 请求路径: INNERLINEBLOCK{{.Method}} {{.Path}}{{.PathParams}}INNERLINEBLOCK
 - 请求参数
 NEWLINE
 {{if .Params}}CODEBLOCKjson
@@ -80,5 +79,6 @@ func (s *serviceDesc) execute() string {
 	// src = strings.Replace(src, "\r\n", "", -1)
 	src = strings.Replace(src, "NEWLINE", "", -1)
 	src = strings.Replace(src, "CODEBLOCK", "```", -1)
+	src = strings.Replace(src, "INNERLINEBLOCK", "`", -1)
 	return src
 }
