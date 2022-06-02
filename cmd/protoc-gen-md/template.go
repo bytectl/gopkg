@@ -37,8 +37,6 @@ CODEBLOCK
 
 {{- end}}
 
-
-
 `
 
 type serviceDesc struct {

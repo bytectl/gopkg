@@ -9,11 +9,12 @@ import (
 var restTemplate = `
 {{$hostString := .HostString}}
 {{- range .Methods}}
-
+NEWLINE
 ### {{.Comment}}
 {{.Method}} {{$hostString}}{{.Path}}{{.PathParams}}
 Content-Type: application/json
-{{.Params}}
+{{if .Params}}NEWLINE
+{{.Params}}{{end}}
 {{- end}}
 `
 
@@ -28,11 +29,12 @@ type serviceDesc struct {
 
 type methodDesc struct {
 	// method
-	Name       string
-	Comment    string
-	Params     string
-	PathParams string
-	Num        int
+	Name           string
+	Comment        string
+	Params         string
+	PathParams     string
+	ResponseParams string
+	Num            int
 	// http_rule
 	Path         string
 	Method       string
@@ -53,5 +55,7 @@ func (s *serviceDesc) execute() string {
 	if err := tmpl.Execute(buf, s); err != nil {
 		panic(err)
 	}
-	return buf.String()
+	src := buf.String()
+	src = strings.Replace(src, "NEWLINE", "", -1)
+	return src
 }

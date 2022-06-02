@@ -9,6 +9,7 @@ import (
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 var methodSets = make(map[string]int)
@@ -137,16 +138,65 @@ func buildHTTPRule(g *protogen.GeneratedFile, m *protogen.Method, rule *annotati
 func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path string) *methodDesc {
 	defer func() { methodSets[m.GoName]++ }()
 
-	fields := m.Input.Desc.Fields()
 	comment := trimComment(m.Comments.Leading.String())
-	param := map[string]string{}
+	paramString := ""
+	pathParamString := ""
+	param := fieldsToMap(m.Input, method, 0)
+	responseParams := fieldsToMap(m.Output, method, 1)
 
+	if len(param) != 0 {
+		if method == "GET" || method == "DELETE" {
+			pathParamString = "?" + toPathParamString(param)
+		} else {
+			bs, _ := json.MarshalIndent(param, "", "  ")
+			paramString = string(bs)
+		}
+	}
+	responseParamsString := ""
+	if len(responseParams) != 0 {
+		bs, _ := json.MarshalIndent(responseParams, "", "  ")
+		responseParamsString = string(bs)
+	}
+
+	return &methodDesc{
+		Name:           m.GoName,
+		Num:            methodSets[m.GoName],
+		Comment:        comment,
+		Params:         paramString,
+		PathParams:     pathParamString,
+		Path:           path,
+		Method:         method,
+		ResponseParams: responseParamsString,
+	}
+}
+
+func fieldsToMap(message *protogen.Message, method string, ptype int32) map[string]interface{} {
+	fields := message.Desc.Fields()
+	param := map[string]interface{}{}
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
+		comment := trimComment(message.Fields[i].Comments.Leading.String())
+		if fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind {
+			m := message.Fields[i].Message
+
+			//if m.Desc.Fields().Get(0).JSONName() != "fields" {
+			if m.Desc.FullName() != "google.protobuf.Struct" {
+				param[fd.JSONName()] = fieldsToMap(m, method, ptype)
+				continue
+			} else {
+				param[fd.JSONName()] = "struct"
+				continue
+			}
+		}
 		value := fd.Kind().String()
-		comment := trimComment(m.Input.Fields[i].Comments.Leading.String())
-		if comment != "" && method != "GET" && method != "DELETE" {
-			value += " " + comment
+		if comment != "" {
+			if ptype == 0 {
+				if method != "GET" && method != "DELETE" {
+					value += " " + comment
+				}
+			} else {
+				value += " " + comment
+			}
 		}
 		param[fd.JSONName()] = value
 
@@ -158,25 +208,7 @@ func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path
 		// 	// TODOfields = fd.Message().Fields()
 		// }
 	}
-	paramString := ""
-	pathParamString := ""
-	if len(param) != 0 {
-		if method == "GET" || method == "DELETE" {
-			pathParamString = "?" + toPathParamString(param)
-		} else {
-			bs, _ := json.MarshalIndent(param, "", "  ")
-			paramString = "\r\n" + string(bs)
-		}
-	}
-	return &methodDesc{
-		Name:       m.GoName,
-		Num:        methodSets[m.GoName],
-		Comment:    comment,
-		Params:     paramString,
-		PathParams: pathParamString,
-		Path:       path,
-		Method:     method,
-	}
+	return param
 }
 
 func trimComment(comment string) string {
@@ -186,7 +218,7 @@ func trimComment(comment string) string {
 	comment = strings.Trim(comment, " ")
 	return comment
 }
-func toPathParamString(params map[string]string) string {
+func toPathParamString(params map[string]interface{}) string {
 	var ps []string
 	for k, v := range params {
 		ps = append(ps, fmt.Sprintf("%s=%s", k, v))
