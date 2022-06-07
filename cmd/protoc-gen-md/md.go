@@ -153,6 +153,7 @@ func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path
 
 	paramString := ""
 	pathParamString := ""
+	tableParamString := fieldsToTableParams(m.Input, method)
 	param := fieldsToMap(m.Input, method, 0)
 	responseParams := fieldsToMap(m.Output, method, 1)
 
@@ -177,6 +178,7 @@ func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path
 		Description:    description,
 		Params:         paramString,
 		PathParams:     pathParamString,
+		TableParams:    tableParamString,
 		Path:           path,
 		Method:         method,
 		ResponseParams: responseParamsString,
@@ -222,6 +224,35 @@ func fieldsToMap(message *protogen.Message, method string, ptype int32) map[stri
 		// }
 	}
 	return param
+}
+
+func fieldsToTableParams(message *protogen.Message, method string) string {
+	tableParamString := ""
+	if method != "GET" && method != "DELETE" {
+		return ""
+	}
+	fields := message.Desc.Fields()
+	param := map[string]interface{}{}
+	for i := 0; i < fields.Len(); i++ {
+		fd := fields.Get(i)
+		comment := trimComment(message.Fields[i].Comments.Leading.String())
+		if fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind {
+			m := message.Fields[i].Message
+			if m.Desc.FullName() != "google.protobuf.Struct" {
+				continue
+			} else {
+				param[fd.JSONName()] = "struct"
+				continue
+			}
+		}
+		if comment == "" {
+			comment = "-"
+		}
+		tableParamString += fmt.Sprintf("| %v | %v | %v | %v |\n", fd.JSONName(), fd.Kind().String(), "required", comment)
+
+	}
+	tableParamString = strings.Trim(tableParamString, "\n")
+	return tableParamString
 }
 
 func trimComment(comment string) string {

@@ -19,8 +19,10 @@ var restTemplate = `
 NEWLINE
 {{if .Params}}CODEBLOCKjson
 {{.Params}}
-CODEBLOCK{{else}}无{{end}}
-NEWLINE
+CODEBLOCK{{else if .TableParams}}|参数名 | 类型 | 可选 | 说明|
+|------|------|-----|-----|
+{{.TableParams}}{{else}}无NEWLINE{{end}}
+
 - 返回参数
 NEWLINE
 {{if .ResponseParams}}CODEBLOCKjson
@@ -57,6 +59,7 @@ type methodDesc struct {
 	Params         string
 	ResponseParams string
 	PathParams     string
+	TableParams    string
 	Num            int
 	// http_rule
 	Path         string
