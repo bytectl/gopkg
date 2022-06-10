@@ -89,7 +89,7 @@ func (tm *ThingModel) addDefault() {
 	tm.Events = append(tm.Events, Event{
 		Identifier: "post",
 		Name:       "属性上报",
-		Desc:       "属性上报",
+		Desc:       "",
 		Method:     "thing.event.property.post",
 		Type:       "info",
 		InputData:  tm.Properties,
@@ -105,7 +105,7 @@ func (tm *ThingModel) addDefault() {
 	tm.Services = append(tm.Services, Service{
 		Identifier: "set",
 		Name:       "属性设置",
-		Desc:       "属性设置",
+		Desc:       "",
 		Method:     "thing.service.property.set",
 		CallType:   "sync",
 		Required:   true,
@@ -114,7 +114,7 @@ func (tm *ThingModel) addDefault() {
 	tm.Services = append(tm.Services, Service{
 		Identifier: "get",
 		Name:       "属性获取",
-		Desc:       "属性获取",
+		Desc:       "",
 		Method:     "thing.service.property.get",
 		CallType:   "sync",
 		Required:   true,
@@ -187,19 +187,19 @@ func (tm *ThingModel) ToValidateModel() *ValidateModel {
 }
 
 // 服务校验
-func (vm *ValidateModel) ServiceValidate(identifier string, inputParams string, outputParams string) (bool, error) {
+func (vm *ValidateModel) ServiceValidate(identifier string, inputParams []byte, outputParams []byte) (bool, error) {
 	result := false
 	service, ok := vm.Services[identifier]
 	if !ok {
 		return result, fmt.Errorf("服务identifier: %s不存在", identifier)
 	}
-	if inputParams != "" {
+	if inputParams != nil {
 		b, err := vm.validateParams(service.InputData, inputParams)
 		if !b {
 			return result, err
 		}
 	}
-	if outputParams != "" {
+	if outputParams != nil {
 		b, err := vm.validateParams(service.OutputData, outputParams)
 		if !b {
 			return result, err
@@ -209,13 +209,13 @@ func (vm *ValidateModel) ServiceValidate(identifier string, inputParams string, 
 }
 
 // 事件校验
-func (vm *ValidateModel) EventValidate(identifier string, inputParams string) (bool, error) {
+func (vm *ValidateModel) EventValidate(identifier string, inputParams []byte) (bool, error) {
 	result := false
 	event, ok := vm.Events[identifier]
 	if !ok {
 		return result, fmt.Errorf("事件identifier: %s不存在", identifier)
 	}
-	if inputParams != "" {
+	if inputParams != nil {
 		b, err := vm.validateParams(event.InputData, inputParams)
 		if !b {
 			return result, err
@@ -225,13 +225,13 @@ func (vm *ValidateModel) EventValidate(identifier string, inputParams string) (b
 }
 
 // 参数校验
-func (tm *ValidateModel) validateParams(mapProperties map[string]Property, params string) (bool, error) {
+func (tm *ValidateModel) validateParams(mapProperties map[string]Property, params []byte) (bool, error) {
 	var (
 		paramMap = make(map[string]interface{})
 		result   = false
 	)
 
-	decoder := json.NewDecoder(bytes.NewReader([]byte(params)))
+	decoder := json.NewDecoder(bytes.NewReader(params))
 	// 使用json number
 	decoder.UseNumber()
 	if err := decoder.Decode(&paramMap); err != nil {

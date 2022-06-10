@@ -76,8 +76,7 @@ func TestValidateThingModel(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	p, _ := json.Marshal(en.Params)
-	_, err = vm.EventValidate("post", string(p))
+	_, err = vm.EventValidate("post", en.Params)
 	if err != nil {
 		t.Error(err)
 	}
