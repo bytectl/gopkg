@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // 校验接口
 type Validator interface {
-	Validate() error
+	ValidateSpec() error
 }
 
 // 物模型
@@ -22,29 +23,29 @@ type Thing struct {
 	Properties []*Property
 }
 
-func (s *Thing) Validate() error {
+func (s *Thing) ValidateSpec() error {
 	var err error
 	if s.Profile == nil {
 		return fmt.Errorf("Thing Profile is nil")
 	}
-	err = s.Profile.Validate()
+	err = s.Profile.ValidateSpec()
 	if err != nil {
 		return fmt.Errorf("profile.%v", err)
 	}
 	for k, event := range s.Events {
-		err = event.Validate()
+		err = event.ValidateSpec()
 		if err != nil {
 			return fmt.Errorf("events[%d].%v", k, err)
 		}
 	}
 	for k, service := range s.Services {
-		err = service.Validate()
+		err = service.ValidateSpec()
 		if err != nil {
 			return fmt.Errorf("services[%d].%v", k, err)
 		}
 	}
 	for k, property := range s.Properties {
-		err = property.Validate()
+		err = property.ValidateSpec()
 		if err != nil {
 			return fmt.Errorf("properties[%d].%v", k, err)
 		}
@@ -57,7 +58,7 @@ type Profile struct {
 	DeviceName string
 }
 
-func (s *Profile) Validate() error {
+func (s *Profile) ValidateSpec() error {
 	if s.ProductKey == "" {
 		return fmt.Errorf("productKey err: productKey is empty")
 	}
@@ -74,7 +75,7 @@ type Event struct {
 	OutputData []*Property
 }
 
-func (s *Event) Validate() error {
+func (s *Event) ValidateSpec() error {
 	var err error
 	if s.Identifier == "" {
 		return fmt.Errorf("identifier err: identifier is empty")
@@ -86,7 +87,7 @@ func (s *Event) Validate() error {
 		return fmt.Errorf("method err: method is empty")
 	}
 	for k, v := range s.OutputData {
-		err = v.Validate()
+		err = v.ValidateSpec()
 		if err != nil {
 			return fmt.Errorf("outputData[%d].%v", k, err)
 		}
@@ -107,7 +108,7 @@ type Service struct {
 	OutputData []*Property
 }
 
-func (s *Service) Validate() error {
+func (s *Service) ValidateSpec() error {
 	var err error
 	if s.Identifier == "" {
 		return fmt.Errorf("identifier err: identifier is empty")
@@ -122,13 +123,13 @@ func (s *Service) Validate() error {
 		return fmt.Errorf("method err: method is empty")
 	}
 	for k, v := range s.InputData {
-		err = v.Validate()
+		err = v.ValidateSpec()
 		if err != nil {
 			return fmt.Errorf("inputData[%d].%v", k, err)
 		}
 	}
 	for k, v := range s.OutputData {
-		err = v.Validate()
+		err = v.ValidateSpec()
 		if err != nil {
 			return fmt.Errorf("outputData[%d].%v", k, err)
 		}
@@ -146,7 +147,7 @@ type Property struct {
 	DataType   *DataType
 }
 
-func (s *Property) Validate() error {
+func (s *Property) ValidateSpec() error {
 	if s.Identifier == "" {
 		return fmt.Errorf("identifier err: identifier is empty")
 	}
@@ -156,7 +157,10 @@ func (s *Property) Validate() error {
 	if s.DataType == nil {
 		return fmt.Errorf("dataType err: dataType is empty")
 	}
-	err := s.DataType.Validate()
+	if strings.Compare(s.AccessMode, "r") != 0 && strings.Compare(s.AccessMode, "rw") != 0 {
+		return fmt.Errorf("accessMode err: accessMode(%s) is invalid", s.AccessMode)
+	}
+	err := s.DataType.ValidateSpec()
 	if err != nil {
 		return fmt.Errorf("dataType.%v", err)
 	}
@@ -171,53 +175,49 @@ type DataType struct {
 	Specs json.RawMessage
 }
 
-func validateSpec(bs []byte, spec Validator) error {
+var TypeSpecRegister = map[string]func([]byte) (Validator, error){
+	"int":    NewDigitalSpec,
+	"float":  NewDigitalSpec,
+	"double": NewDigitalSpec,
+	"text":   NewTextSpec,
+	"enum":   NewEnumSpec,
+	"bool":   NewBooleanSpec,
+	"array":  NewArraySpec,
+	"struct": NewStructSpec,
+	"date":   NewEmptySpec,
+}
+
+func (s *DataType) ValidateSpec() error {
+	var err error
+	bs := s.Specs
 	if len(bs) == 0 {
 		return fmt.Errorf("spec is empty")
 	}
-	err := json.Unmarshal(bs, spec)
-	if err != nil {
-		return err
-	}
-	return spec.Validate()
-}
-func (s *DataType) Validate() error {
-	var err error
-	bs := s.Specs
-	switch s.Type {
-	case "int", "float", "double":
-		err = validateSpec(bs, &DigitalSpec{})
-	case "text":
-		err = validateSpec(bs, &TextSpec{})
-	case "array":
-		err = validateSpec(bs, &ArraySpec{})
-	case "struct":
-		var structDataSpec []*StructDataSpec
-		err = json.Unmarshal(bs, &structDataSpec)
-		if err != nil {
-			return fmt.Errorf("specs.%v", err)
-		}
-		for _, v := range structDataSpec {
-			err = v.Validate()
-			if err != nil {
-				return fmt.Errorf("specs.%v", err)
-			}
-		}
-	case "enum":
-
-		enumSpec := &EnumSpec{
-			Specs: bs,
-		}
-		err = enumSpec.Validate()
-	case "date":
-		return nil
-	default:
+	// 查找注册的类型函数
+	newValidator, ok := TypeSpecRegister[s.Type]
+	if !ok {
 		return fmt.Errorf("type err: type is invalid or unsupported for now")
 	}
+	// 创建相应校验类型
+	spec, er := newValidator(bs)
+	if er != nil {
+		return fmt.Errorf("specs.%v", err)
+	}
+	err = spec.ValidateSpec()
 	if err != nil {
 		return fmt.Errorf("specs.%v", err)
 	}
 	return nil
+}
+
+type EmptySpec struct{}
+
+func (s *EmptySpec) ValidateSpec() error {
+	fmt.Println("note: empty validateSpec.....")
+	return nil
+}
+func NewEmptySpec(bs []byte) (Validator, error) {
+	return &EmptySpec{}, nil
 }
 
 // 数值类型
@@ -229,7 +229,15 @@ type DigitalSpec struct {
 	UnitName string
 }
 
-func (s *DigitalSpec) Validate() error {
+func NewDigitalSpec(bs []byte) (Validator, error) {
+	spec := &DigitalSpec{}
+	err := json.Unmarshal(bs, spec)
+	if err != nil {
+		return nil, fmt.Errorf("(digital) err: %v", err)
+	}
+	return spec, nil
+}
+func (s *DigitalSpec) ValidateSpec() error {
 	_, err := strconv.ParseUint(s.Max, 10, 32)
 	if err != nil {
 		return fmt.Errorf("(digital).max err: %v", err)
@@ -251,7 +259,15 @@ type ArraySpec struct {
 	Item *DataType
 }
 
-func (s *ArraySpec) Validate() error {
+func NewArraySpec(bs []byte) (Validator, error) {
+	spec := &ArraySpec{}
+	err := json.Unmarshal(bs, spec)
+	if err != nil {
+		return nil, fmt.Errorf("(array) err: %v", err)
+	}
+	return spec, nil
+}
+func (s *ArraySpec) ValidateSpec() error {
 	const (
 		maxSize = 512
 		MinSize = 1
@@ -264,7 +280,7 @@ func (s *ArraySpec) Validate() error {
 		err = fmt.Errorf("size out of range [%v, %v]", MinSize, maxSize)
 		return fmt.Errorf("(array).size err: %v", err)
 	}
-	err = s.Item.Validate()
+	err = s.Item.ValidateSpec()
 	if err != nil {
 		return fmt.Errorf("(array).item.%v", err)
 	}
@@ -272,28 +288,39 @@ func (s *ArraySpec) Validate() error {
 }
 
 // 结构体类型
-type StructDataSpec struct {
-	Identifier string
-	Name       string
-	DataType   *DataType
+type StructSpec struct {
+	// Identifier Name dataType
+	Properties []*Property
 }
 
-func (s *StructDataSpec) Validate() error {
-	if s.Identifier == "" {
-		return fmt.Errorf("(struct).identifier err: identifier is empty")
-	}
-	if s.Name == "" {
-		return fmt.Errorf("(struct).name err: name is empty")
-	}
-	if s.DataType == nil {
-		return fmt.Errorf("(struct).dataType err: dataType is empty")
-	}
-	if s.DataType.Type == "struct" {
-		return fmt.Errorf("(struct).dataType.type  err: struct wrap struct, not support")
-	}
-	err := s.DataType.Validate()
+func NewStructSpec(bs []byte) (Validator, error) {
+	var properties []*Property
+	err := json.Unmarshal(bs, &properties)
 	if err != nil {
-		return fmt.Errorf("(struct).dataType.%v", err)
+		return nil, fmt.Errorf("(struct).%v", err)
+	}
+	return &StructSpec{Properties: properties}, nil
+}
+
+func (s *StructSpec) ValidateSpec() error {
+	// 不能直接校验 Properties
+	for k, v := range s.Properties {
+		if v.Identifier == "" {
+			return fmt.Errorf("(struct)[%d].identifier err: identifier is empty", k)
+		}
+		if v.Name == "" {
+			return fmt.Errorf("(struct).name err: name is empty")
+		}
+		if v.DataType == nil {
+			return fmt.Errorf("(struct).dataType err: dataType is empty")
+		}
+		if v.DataType.Type == "struct" {
+			return fmt.Errorf("(struct).dataType.type  err: struct wrap struct, not support")
+		}
+		err := v.DataType.ValidateSpec()
+		if err != nil {
+			return fmt.Errorf("(struct).dataType.%v", err)
+		}
 	}
 	return nil
 }
@@ -303,7 +330,16 @@ type TextSpec struct {
 	Length string
 }
 
-func (s *TextSpec) Validate() error {
+func NewTextSpec(bs []byte) (Validator, error) {
+	spec := &TextSpec{}
+	err := json.Unmarshal(bs, spec)
+	if err != nil {
+		return nil, fmt.Errorf("(text) err: %v", err)
+	}
+	return spec, nil
+}
+
+func (s *TextSpec) ValidateSpec() error {
 	const (
 		maxLength = 10240
 		MinLength = 1
@@ -325,7 +361,16 @@ type BooleanSpec struct {
 	TrueValue  string `json:"1"`
 }
 
-func (s *BooleanSpec) Validate() error {
+func NewBooleanSpec(bs []byte) (Validator, error) {
+	spec := &BooleanSpec{}
+	err := json.Unmarshal(bs, spec)
+	if err != nil {
+		return nil, fmt.Errorf("(bool) err: %v", err)
+	}
+	return spec, nil
+}
+
+func (s *BooleanSpec) ValidateSpec() error {
 	if s.FalseValue == "" {
 		return fmt.Errorf("(bool).0  err: value is empty")
 	}
@@ -337,16 +382,23 @@ func (s *BooleanSpec) Validate() error {
 
 // 枚举类型
 type EnumSpec struct {
-	Specs json.RawMessage
+	Specs map[string]string
 }
 
-func (s *EnumSpec) Validate() error {
+func NewEnumSpec(bs []byte) (Validator, error) {
 	var specs map[string]string
-	err := json.Unmarshal(s.Specs, &specs)
+	err := json.Unmarshal(bs, &specs)
 	if err != nil {
-		return fmt.Errorf("(enum) err: %v", err)
+		return nil, fmt.Errorf("(enum) err: %v", err)
 	}
-	for k, v := range specs {
+	enumSpec := &EnumSpec{
+		Specs: specs,
+	}
+	return enumSpec, nil
+}
+
+func (s *EnumSpec) ValidateSpec() error {
+	for k, v := range s.Specs {
 		if v == "" {
 			return fmt.Errorf("(enum).%v err: %v is empty", k, k)
 		}
@@ -355,5 +407,9 @@ func (s *EnumSpec) Validate() error {
 			return fmt.Errorf("(enum).%v err: %v is no enum", k, k)
 		}
 	}
+	return nil
+}
+
+func (s *EnumSpec) ValidateValue(interface{}) error {
 	return nil
 }

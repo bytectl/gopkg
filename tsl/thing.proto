@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package thing.v1;
+
+
+import "validate/validate.proto";
+import "google/protobuf/any.proto";
+
+option go_package = "gopkg/tsl;tsl";
+
+// 物模型
+message Thing {
+    // 事件
+    repeated Event events = 1;
+    // 服务
+    repeated Service services = 2;
+    // 属性
+    repeated Property properties = 3;
+}
+
+// 事件
+message Event {
+    string identifier = 1;
+    string name = 2;
+    string desc = 3;
+    string method = 4;
+    string type = 5;
+    repeated Property inputData = 6;
+}
+// 服务
+message Service {
+    string identifier = 1;
+    string name = 2;
+    string desc = 3;
+    string method = 4;
+    string callType = 5;
+    bool required = 6;
+    repeated Property inputData = 7;
+    repeated Property outputData = 8;
+}
+
+// 属性
+message Property {
+    string accessMode = 1;
+    string identifier = 2;
+    string name = 3;
+    string desc = 4;
+    bool required = 5;
+    DataType dataType = 6;
+}
+// 数据类型
+message DataType {
+    // 数据类型
+    string type = 1;
+    // 数据类型定义
+    google.protobuf.Any specs =2;
+}
+
+// 数值类型
+message DigitalSpec {
+    string max = 1[ (validate.rules).string = {min_len : 1, max_len : 32} ]; 
+    string min = 2[ (validate.rules).string = {min_len : 1, max_len : 32} ]; 
+    string step = 3;
+    string unit = 4;
+    string unitName = 5;
+}
+// 数组类型
+message ArraySpec {
+    string size = 1;
+    repeated DataType item = 2;
+}
+// 结构体类型
+message StructDataSpec {
+    string identifier = 1;
+    string name = 2;
+    DataType dataType = 3;
+}
+// 字符串类型
+message TextSpec {
+    string length = 1;
+}
+// 布尔类型
+message BooleanSpec {
+    string falseValue = 1 [json_name = "0"];
+    string trueValue = 2  [json_name = "1"];
+}
