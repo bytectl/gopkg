@@ -1,0 +1,12 @@
+{
+    "model": {
+        "profile": {
+            "productKey": "empty",
+            "deviceName": "无"
+        },
+        "services": [],
+        "properties": [],
+        "events": []
+    },
+    "entities": []
+}

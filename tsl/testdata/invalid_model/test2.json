@@ -1,0 +1,22 @@
+{
+    "profile": {
+        "productKey": "invalid_string",
+        "deviceName": "无"
+    },
+    "services": [],
+    "events": [],
+    "properties": [
+        {
+            "identifier": "invalid_string",
+            "dataType": {
+                "specs": {
+                },
+                "type": "text"
+            },
+            "name": "invalid_string",
+            "accessMode": "rw",
+            "required": false,
+            "desc": ""
+        }
+    ]
+}

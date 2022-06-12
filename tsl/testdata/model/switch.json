@@ -1,0 +1,67 @@
+{
+    "model": {
+        "profile": {
+            "productKey": "switch",
+            "deviceName": "开关"
+        },
+        "properties": [{
+            "identifier": "switch",
+            "dataType": {
+                "specs": {
+                    "0": "关",
+                    "1": "开"
+                },
+                "type": "enum"
+            },
+            "name": "开关",
+            "accessMode": "rw",
+            "required": false,
+            "desc": ""
+        }, {
+            "identifier": "countDown",
+            "dataType": {
+                "specs": {
+                    "unit": "m",
+                    "min": "0",
+                    "unitName": "分",
+                    "max": "1440",
+                    "step": "1"
+                },
+                "type": "int"
+            },
+            "name": "倒计时",
+            "accessMode": "rw",
+            "required": false,
+            "desc": ""
+        }, {
+            "accessMode": "rw",
+            "dataType": {
+                "specs": {
+                    "length": "256"
+                },
+                "type": "text"
+            },
+            "desc": "",
+            "identifier": "order",
+            "name": "定时",
+            "required": false
+        }],
+        "services": [],
+        "events": []
+    },
+   "entities": [
+        {
+            "id": "123",
+            "version": "1.0",
+            "params": {
+                "switch": 1,
+                "order": "2",
+                "kkk": "ddd"
+            },
+            "method": "thing.event.property.post",
+            "data": {}
+        }
+   ],
+   "isFail": true
+}
+
