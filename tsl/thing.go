@@ -23,6 +23,20 @@ type Thing struct {
 	}
 }
 
+// NewThing
+func NewThing(bs []byte) (*Thing, error) {
+	var thing Thing
+	err := json.Unmarshal(bs, &thing)
+	if err != nil {
+		return nil, err
+	}
+	err = thing.ValidateSpec()
+	if err != nil {
+		return nil, err
+	}
+	return &thing, nil
+}
+
 func (s *Thing) init() {
 	if s.Value.Events == nil {
 		s.Value.Events = make(map[string]*Event)
