@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // 物模型
@@ -84,6 +85,50 @@ func (s *Thing) init() {
 			OutputData: s.Properties,
 		}
 	}
+}
+
+// 校验实体数据, 传入实体字节数据
+func (s *Thing) ValidateEntityBytes(bs []byte) error {
+	var thingEntity ThingEntity
+	err := json.Unmarshal(bs, &thingEntity)
+	if err != nil {
+		return err
+	}
+	return s.ValidateEntity(&thingEntity)
+}
+
+// 校验实体数据 传入为结构体
+func (s *Thing) ValidateEntity(thingEntity *ThingEntity) error {
+	const (
+		methodCellLength    = 4
+		eventOrServiceIndex = 1
+		methodActionIndex   = 2
+		propertyName        = "property"
+		serviceName         = "service"
+		eventName           = "event"
+	)
+	var err error
+	if thingEntity == nil {
+		return fmt.Errorf("thingEntity is nil")
+	}
+	// deal method
+	strs := strings.Split(thingEntity.Method, ".")
+	if len(strs) < methodCellLength {
+		return fmt.Errorf("thingEntity.method(%s) is invalid", thingEntity.Method)
+	}
+	id := strs[methodActionIndex]
+	if strings.Compare(id, propertyName) == 0 {
+		id = strs[methodActionIndex+1]
+	}
+	switch strs[eventOrServiceIndex] {
+	case serviceName:
+		err = s.ValidateService(id, thingEntity.Params, thingEntity.Data)
+	case eventName:
+		err = s.ValidateEvent(id, thingEntity.Params)
+	default:
+		err = fmt.Errorf("thingEntity.method(%s) is invalid", thingEntity.Method)
+	}
+	return err
 }
 
 func (s *Thing) ValidateSpec() error {

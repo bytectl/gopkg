@@ -116,25 +116,7 @@ func executeValidTests(t *testing.T, path string) error {
 		return nil
 	}
 	for _, v := range test.Entities {
-
-		strs := strings.Split(v.Method, ".")
-		if len(strs) != 4 {
-			tLog("file: %s, Expected method but got %s\n", filename, v.Method)
-			continue
-		}
-		id := strs[2]
-		if strings.Compare(id, "property") == 0 {
-			id = strs[3]
-		}
-		switch strs[1] {
-		case "service":
-			err = test.Model.ValidateService(id, v.Params, v.Data)
-		case "event":
-			err = test.Model.ValidateEvent(id, v.Params)
-		default:
-			tLog("file: %s, err method got %s,\n", filename, v.Method)
-			return nil
-		}
+		err = test.Model.ValidateEntity(v)
 		if err != nil {
 			tLog("Error (%s)\n", err.Error())
 		}
