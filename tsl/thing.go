@@ -199,8 +199,8 @@ func (s *Thing) ValidateService(identifier string, params, data []byte) error {
 
 func (s *Thing) ToEntityString() string {
 	var m struct {
-		Services []*ThingEntity
-		Events   []*ThingEntity
+		Events   []*ThingEntity `json:"events"`
+		Services []*ThingEntity `json:"services"`
 	}
 	s.init() // initialize
 	for _, v := range s.Value.Services {

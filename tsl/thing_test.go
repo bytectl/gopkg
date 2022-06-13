@@ -9,6 +9,7 @@ import (
 	"testing"
 )
 
+// 测试校验错误物模型
 func TestInvalidModel(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -54,6 +55,7 @@ func executeInvalidTests(t *testing.T, path string) error {
 	return nil
 }
 
+// 测试校验正确物模型 校验物模型实体数据
 func TestValidModel(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -74,6 +76,7 @@ func TestValidModel(t *testing.T) {
 		t.Errorf("Error (%s)\n", err.Error())
 	}
 }
+
 func executeValidTests(t *testing.T, path string) error {
 	var test struct {
 		Model    *Thing
@@ -111,7 +114,6 @@ func executeValidTests(t *testing.T, path string) error {
 		tLog("Error (%s)\n", err.Error())
 		return nil
 	}
-	fmt.Println(test.Model.ToEntityString())
 	if test.Entities == nil {
 		t.Logf("Entities is empty \n")
 		return nil
@@ -122,5 +124,61 @@ func executeValidTests(t *testing.T, path string) error {
 			tLog("Error (%s)\n", err.Error())
 		}
 	}
+	return nil
+}
+
+// 测试转换为简单模型
+func TestToEntity(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err.Error())
+	}
+	wd = filepath.Join(wd, "testdata/model")
+
+	err = filepath.Walk(wd, func(path string, fileInfo os.FileInfo, err error) error {
+		if fileInfo.IsDir() && path != wd {
+			return filepath.SkipDir
+		}
+		if !strings.HasSuffix(fileInfo.Name(), ".json") {
+			return nil
+		}
+		return executeToEntityTests(t, path)
+	})
+	if err != nil {
+		t.Errorf("Error (%s)\n", err.Error())
+	}
+}
+
+func executeToEntityTests(t *testing.T, path string) error {
+	var test struct {
+		Model *Thing
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		t.Errorf("Error (%s)\n", err.Error())
+		return err
+	}
+	defer file.Close()
+
+	fmt.Println(file.Name())
+
+	d := json.NewDecoder(file)
+	err = d.Decode(&test)
+	if err != nil {
+		t.Errorf("Error (%s)\n", err.Error())
+		return err
+	}
+	filename := filepath.Base(path)
+	if test.Model == nil {
+		t.Logf("file: %s, Expected model but got nil\n", filename)
+		return nil
+	}
+	err = test.Model.ValidateSpec()
+	if err != nil {
+		t.Logf("Error (%s)\n", err.Error())
+		return nil
+	}
+	fmt.Println(test.Model.ToEntityString())
 	return nil
 }
