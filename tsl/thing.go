@@ -7,6 +7,16 @@ import (
 	"strings"
 )
 
+type ThingEntity struct {
+	ID        string          `json:"id"`      // 消息ID，String类型的数字，取值范围0~4294967295，且每个消息ID在当前设备中具有唯一性。
+	Version   string          `json:"version"` // 协议版本号，目前协议版本号唯一取值为1.0。
+	Params    json.RawMessage `json:"params,omitempty"`
+	Method    string          `json:"method"`
+	Timestamp string          `json:"timestamp"`
+	Data      json.RawMessage `json:"data,omitempty"`
+	// Sys        interface{} `json:"sys,omitempty"` //	扩展功能的参数，其下包含各功能字段。
+}
+
 // 物模型
 type Thing struct {
 	Profile *Profile
@@ -187,6 +197,22 @@ func (s *Thing) ValidateService(identifier string, params, data []byte) error {
 	return nil
 }
 
+func (s *Thing) ToEntityString() string {
+	var m struct {
+		Services []*ThingEntity
+		Events   []*ThingEntity
+	}
+	s.init() // initialize
+	for _, v := range s.Value.Services {
+		m.Services = append(m.Services, v.ToEntity())
+	}
+	for _, v := range s.Value.Events {
+		m.Events = append(m.Events, v.ToEntity())
+	}
+	bs, _ := json.MarshalIndent(m, "", "  ")
+	return string(bs)
+}
+
 type Profile struct {
 	ProductKey string
 	DeviceName string
@@ -247,6 +273,27 @@ func (s *Event) ValidateEntity(outputData []byte) error {
 		}
 	}
 	return nil
+}
+
+func (s *Event) ToEntity() *ThingEntity {
+	outputData := propertyToEntityMap(s.OutputData)
+	outputBytes, _ := json.Marshal(outputData)
+	methodStrs := []string{
+		s.Method,
+	}
+	if s.Name != "" {
+		methodStrs = append(methodStrs, s.Name)
+	}
+	if s.Desc != "" {
+		methodStrs = append(methodStrs, s.Desc)
+	}
+	return &ThingEntity{
+		ID:        "int64,消息id",
+		Version:   "1.0",
+		Timestamp: "时间戳",
+		Params:    outputBytes, // event 为上报, 参数到平台放outputData中
+		Method:    strings.Join(methodStrs, ", "),
+	}
 }
 
 // 服务
@@ -320,6 +367,30 @@ func (s *Service) ValidateEntity(inputData, outputData []byte) error {
 		}
 	}
 	return nil
+}
+
+func (s *Service) ToEntity() *ThingEntity {
+	inputData := propertyToEntityMap(s.InputData)
+	outputData := propertyToEntityMap(s.OutputData)
+	inputBytes, _ := json.Marshal(inputData)
+	outputBytes, _ := json.Marshal(outputData)
+	methodStrs := []string{
+		s.Method,
+	}
+	if s.Name != "" {
+		methodStrs = append(methodStrs, s.Name)
+	}
+	if s.Desc != "" {
+		methodStrs = append(methodStrs, s.Desc)
+	}
+	return &ThingEntity{
+		ID:        "int64,消息id",
+		Version:   "1.0",
+		Timestamp: "时间戳",
+		Params:    inputBytes,
+		Data:      outputBytes,
+		Method:    strings.Join(methodStrs, ","),
+	}
 }
 
 func validateEntityParams(specData map[string]*Property, data []byte) error {

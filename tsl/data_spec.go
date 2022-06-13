@@ -40,11 +40,27 @@ func (s *Property) ValidateSpec() error {
 func (s *Property) ValidateValue(value interface{}) error {
 	return s.DataType.ValidateValue(value)
 }
+func (s *Property) ToEntityString() string {
+	specs := []string{
+		s.DataType.Type,
+		s.Name,
+	}
+	if s.Desc != "" {
+		specs = append(specs, s.Desc)
+	}
+	if s.DataType.Type == "struct" || s.DataType.Type == "array" {
+		// 直接返回 json 字符串
+		return s.DataType.ToEntityString()
+	}
+	specs = append(specs, s.DataType.ToEntityString())
+	return strings.Join(specs, ",")
+}
 
 // 校验接口
 type Validator interface {
 	ValidateSpec() error
 	ValidateValue(value interface{}) error
+	ToEntityString() string
 }
 
 // 数据类型
@@ -109,6 +125,7 @@ func (s *DataType) ValidateSpec() error {
 	}
 	return nil
 }
+
 func (s *DataType) ValidateValue(value interface{}) error {
 	s.init() // 初始化
 	err := s.Value.Specs.ValidateValue(value)
@@ -116,6 +133,15 @@ func (s *DataType) ValidateValue(value interface{}) error {
 		return fmt.Errorf("%v.%v", s.Type, err)
 	}
 	return nil
+}
+
+func (s *DataType) ToEntityString() string {
+	err := s.init() // 初始化
+	if err != nil {
+		fmt.Println("DataType.ToEntityString,", err)
+		return ""
+	}
+	return s.Value.Specs.ToEntityString()
 }
 
 type EmptySpec struct{}
@@ -130,6 +156,9 @@ func (s *EmptySpec) ValidateSpec() error {
 func (s *EmptySpec) ValidateValue(value interface{}) error {
 	fmt.Println("note: empty validateValue.....")
 	return nil
+}
+func (s *EmptySpec) ToEntityString() string {
+	return ""
 }
 
 // 数值类型
@@ -194,6 +223,11 @@ func (s *DigitalSpec) ValidateValue(value interface{}) error {
 	return nil
 }
 
+func (s *DigitalSpec) ToEntityString() string {
+	spec := fmt.Sprintf("range: %v-%v %v(%v),step: %v", s.Value.Min, s.Value.Max, s.UnitName, s.Unit, s.Value.Step)
+	return spec
+}
+
 // 数值类型
 type FloatSpec struct {
 	Max      string
@@ -255,6 +289,11 @@ func (s *FloatSpec) ValidateValue(value interface{}) error {
 	return nil
 }
 
+func (s *FloatSpec) ToEntityString() string {
+	spec := fmt.Sprintf("range: %v-%v(unit:%v),step: %v", s.Value.Min, s.Value.Max, s.Unit, s.Value.Step)
+	return spec
+}
+
 // 字符串类型
 type TextSpec struct {
 	Length string
@@ -300,6 +339,11 @@ func (s *TextSpec) ValidateValue(value interface{}) error {
 	return nil
 }
 
+func (s *TextSpec) ToEntityString() string {
+	spec := fmt.Sprintf("max-length: %v", s.Value.Length)
+	return spec
+}
+
 // 布尔类型
 type BooleanSpec struct {
 	FalseValue string `json:"0"`
@@ -338,6 +382,11 @@ func (s *BooleanSpec) ValidateValue(value interface{}) error {
 		return fmt.Errorf("(bool).value err: %v  is not bool", value)
 	}
 	return nil
+}
+
+func (s *BooleanSpec) ToEntityString() string {
+	spec := fmt.Sprintf("0-%v,1-%v", s.FalseValue, s.TrueValue)
+	return spec
 }
 
 // 枚举类型
@@ -389,6 +438,14 @@ func (s *EnumSpec) ValidateValue(value interface{}) error {
 		return fmt.Errorf("(enum).value err: %+v is not defined enum", value)
 	}
 	return nil
+}
+
+func (s *EnumSpec) ToEntityString() string {
+	specs := []string{}
+	for k, v := range s.Specs {
+		specs = append(specs, fmt.Sprintf("%v-%v", k, v))
+	}
+	return strings.Join(specs, ",")
 }
 
 // 数组类型
@@ -444,6 +501,24 @@ func (s *ArraySpec) ValidateValue(value interface{}) error {
 		}
 	}
 	return nil
+}
+
+func (s *ArraySpec) ToEntityString() string {
+	var items []interface{}
+	str := fmt.Sprintf("%v,%v,size:%v", s.Item.Type, s.Item.ToEntityString(), s.Value.Size)
+	if s.Item.Type == "struct" || s.Item.Type == "array" {
+
+		vm := map[string]interface{}{}
+		err := json.Unmarshal([]byte(s.Item.ToEntityString()), &vm)
+		if err != nil {
+			fmt.Println("Unmarshal item,err: ", err)
+		}
+		items = append(items, vm)
+	} else {
+		items = append(items, str)
+	}
+	bs, _ := json.Marshal(items)
+	return string(bs)
 }
 
 // 结构体类型
@@ -509,10 +584,42 @@ func (s *StructSpec) ValidateValue(value interface{}) error {
 	return nil
 }
 
+func (s *StructSpec) ToEntityString() string {
+	m := propertyToEntityMap(s.Properties)
+	bs, _ := json.Marshal(m)
+	return string(bs)
+}
+
 func propertiesToMap(ps []*Property) map[string]*Property {
 	paramsMap := make(map[string]*Property)
 	for _, v := range ps {
 		paramsMap[v.Identifier] = v
 	}
 	return paramsMap
+}
+
+// 属性列表转换为map
+func propertyToEntityMap(p []*Property) map[string]interface{} {
+	m := map[string]interface{}{}
+
+	for _, v := range p {
+		str := v.ToEntityString()
+		m[v.Identifier] = str
+		if v.DataType.Type == "struct" {
+			tm := map[string]interface{}{}
+			err := json.Unmarshal([]byte(str), &tm)
+			if err != nil {
+				fmt.Printf("%v Unmarshal err: %v: \n", str, err)
+			}
+			m[v.Identifier] = tm
+		} else if v.DataType.Type == "array" {
+			tm := []interface{}{}
+			err := json.Unmarshal([]byte(str), &tm)
+			if err != nil {
+				fmt.Printf("%v Unmarshal err: %v: \n", str, err)
+			}
+			m[v.Identifier] = tm
+		}
+	}
+	return m
 }

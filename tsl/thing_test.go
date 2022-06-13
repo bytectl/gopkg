@@ -111,6 +111,7 @@ func executeValidTests(t *testing.T, path string) error {
 		tLog("Error (%s)\n", err.Error())
 		return nil
 	}
+	fmt.Println(test.Model.ToEntityString())
 	if test.Entities == nil {
 		t.Logf("Entities is empty \n")
 		return nil
