@@ -7,55 +7,6 @@ import (
 	"strings"
 )
 
-// 属性
-type Property struct {
-	AccessMode string
-	Identifier string
-	Name       string
-	Desc       string
-	Required   bool
-	DataType   *DataType
-}
-
-func (s *Property) ValidateSpec() error {
-	if s.Identifier == "" {
-		return fmt.Errorf("identifier err: identifier is empty")
-	}
-	if s.Name == "" {
-		return fmt.Errorf("name  err: name is empty")
-	}
-	if s.DataType == nil {
-		return fmt.Errorf("dataType err: dataType is empty")
-	}
-	if s.AccessMode != "" && strings.Compare(s.AccessMode, "r") != 0 && strings.Compare(s.AccessMode, "rw") != 0 {
-		return fmt.Errorf("accessMode err: accessMode(%s) is invalid", s.AccessMode)
-	}
-	err := s.DataType.ValidateSpec()
-	if err != nil {
-		return fmt.Errorf("dataType.%v", err)
-	}
-	return nil
-}
-
-func (s *Property) ValidateValue(value interface{}) error {
-	return s.DataType.ValidateValue(value)
-}
-func (s *Property) ToEntityString() string {
-	specs := []string{
-		s.DataType.Type,
-		s.Name,
-	}
-	if s.Desc != "" {
-		specs = append(specs, s.Desc)
-	}
-	if s.DataType.Type == "struct" || s.DataType.Type == "array" {
-		// 直接返回 json 字符串
-		return s.DataType.ToEntityString()
-	}
-	specs = append(specs, s.DataType.ToEntityString())
-	return strings.Join(specs, ",")
-}
-
 // 校验接口
 type Validator interface {
 	ValidateSpec() error
@@ -74,6 +25,7 @@ type DataType struct {
 	}
 }
 
+// 数据类型注册表
 var TypeSpecRegister = map[string]func([]byte) (Validator, error){
 	"int":    NewDigitalSpec,
 	"float":  NewFloatSpec,
@@ -588,6 +540,55 @@ func (s *StructSpec) ToEntityString() string {
 	m := propertyToEntityMap(s.Properties)
 	bs, _ := json.Marshal(m)
 	return string(bs)
+}
+
+// 属性
+type Property struct {
+	AccessMode string
+	Identifier string
+	Name       string
+	Desc       string
+	Required   bool
+	DataType   *DataType
+}
+
+func (s *Property) ValidateSpec() error {
+	if s.Identifier == "" {
+		return fmt.Errorf("identifier err: identifier is empty")
+	}
+	if s.Name == "" {
+		return fmt.Errorf("name  err: name is empty")
+	}
+	if s.DataType == nil {
+		return fmt.Errorf("dataType err: dataType is empty")
+	}
+	if s.AccessMode != "" && strings.Compare(s.AccessMode, "r") != 0 && strings.Compare(s.AccessMode, "rw") != 0 {
+		return fmt.Errorf("accessMode err: accessMode(%s) is invalid", s.AccessMode)
+	}
+	err := s.DataType.ValidateSpec()
+	if err != nil {
+		return fmt.Errorf("dataType.%v", err)
+	}
+	return nil
+}
+
+func (s *Property) ValidateValue(value interface{}) error {
+	return s.DataType.ValidateValue(value)
+}
+func (s *Property) ToEntityString() string {
+	specs := []string{
+		s.DataType.Type,
+		s.Name,
+	}
+	if s.Desc != "" {
+		specs = append(specs, s.Desc)
+	}
+	if s.DataType.Type == "struct" || s.DataType.Type == "array" {
+		// 直接返回 json 字符串
+		return s.DataType.ToEntityString()
+	}
+	specs = append(specs, s.DataType.ToEntityString())
+	return strings.Join(specs, ",")
 }
 
 func propertiesToMap(ps []*Property) map[string]*Property {
