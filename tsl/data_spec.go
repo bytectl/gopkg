@@ -9,8 +9,11 @@ import (
 
 // 校验接口
 type Validator interface {
+	// 校验物模型定义规范
 	ValidateSpec() error
+	// 校验物模型实例值
 	ValidateValue(value interface{}) error
+	// 转换为物模型实例
 	ToEntityString() string
 }
 
