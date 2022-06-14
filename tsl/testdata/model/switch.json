@@ -59,7 +59,7 @@
                 "kkk": "ddd"
             },
             "method": "thing.event.property.post",
-            "data": {}
+            "timestamp": 152889788000
         }
    ],
    "isFail": true

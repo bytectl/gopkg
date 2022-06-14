@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type ThingEntity struct {
@@ -12,7 +13,7 @@ type ThingEntity struct {
 	Version   string          `json:"version"` // 协议版本号，目前协议版本号唯一取值为1.0。
 	Params    json.RawMessage `json:"params,omitempty"`
 	Method    string          `json:"method"`
-	Timestamp string          `json:"timestamp"`
+	Timestamp int64           `json:"timestamp"`
 	Data      json.RawMessage `json:"data,omitempty"`
 	// Sys        interface{} `json:"sys,omitempty"` //	扩展功能的参数，其下包含各功能字段。
 }
@@ -125,6 +126,9 @@ func (s *Thing) ValidateEntity(thingEntity *ThingEntity) error {
 		err = s.ValidateEvent(method.Action, thingEntity.Params)
 	} else {
 		err = fmt.Errorf("thingEntity.method(%s) no service or event", thingEntity.Method)
+	}
+	if thingEntity.Timestamp <= 0 {
+		err = fmt.Errorf("thingEntity.timestamp <=0 , invalid")
 	}
 	return err
 }
@@ -278,7 +282,7 @@ func (s *Event) ToEntity() *ThingEntity {
 	return &ThingEntity{
 		ID:        "int64,消息id",
 		Version:   "1.0",
-		Timestamp: "时间戳",
+		Timestamp: time.Now().UnixMilli(),
 		Params:    outputBytes, // event 为上报, 参数到平台放outputData中
 		Method:    strings.Join(methodStrs, ", "),
 	}
@@ -374,7 +378,7 @@ func (s *Service) ToEntity() *ThingEntity {
 	return &ThingEntity{
 		ID:        "int64,消息id",
 		Version:   "1.0",
-		Timestamp: "时间戳",
+		Timestamp: time.Now().UnixMilli(),
 		Params:    inputBytes,
 		Data:      outputBytes,
 		Method:    strings.Join(methodStrs, ","),

@@ -160,7 +160,7 @@
         {
             "id": "2",
             "method": "thing.service.property.get",
-            "timestamp": "",
+            "timestamp": 152889788000,
             "params": "",
             "version": "1.0"
         }
