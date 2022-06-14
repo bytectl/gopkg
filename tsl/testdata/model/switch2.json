@@ -157,6 +157,12 @@
         }]
     },
     "entities": [
-
+        {
+            "id": "2",
+            "method": "thing.service.property.get",
+            "timestamp": "",
+            "params": "",
+            "version": "1.0"
+        }
     ]
 }

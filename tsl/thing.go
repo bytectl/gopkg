@@ -383,11 +383,11 @@ func (s *Service) ToEntity() *ThingEntity {
 
 func validateEntityParams(specData map[string]*Property, data []byte) error {
 	var err error
-	if data == nil || len(data) == 0 || strings.Compare(string(data), "{}") == 0 {
+	if data == nil || len(string(data)) == 0 || strings.Compare(string(data), "{}") == 0 {
 		return nil
 	}
 	if specData == nil {
-		return fmt.Errorf("validateEntityParams: specData==nil")
+		return nil
 	}
 	paramMap := make(map[string]interface{})
 	decoder := json.NewDecoder(bytes.NewReader(data))
