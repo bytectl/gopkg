@@ -383,6 +383,9 @@ func (s *Service) ToEntity() *ThingEntity {
 
 func validateEntityParams(specData map[string]*Property, data []byte) error {
 	var err error
+	if data == nil || len(data) == 0 || strings.Compare(string(data), "{}") == 0 {
+		return nil
+	}
 	if specData == nil {
 		return fmt.Errorf("validateEntityParams: specData==nil")
 	}
