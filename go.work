@@ -3,5 +3,6 @@ go 1.18
 use (
   ./
   ./cmd/protoc-gen-md
-  ./cmd/protoc-gen-restfile 
+  ./cmd/protoc-gen-restfile
+  ./cmd/protoc-gen-go-mqtt
 )

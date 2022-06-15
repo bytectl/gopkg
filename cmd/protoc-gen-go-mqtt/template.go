@@ -54,7 +54,9 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 		} else {
 			log.Debugf("reply mqtt topic:%v,body: %v", ctx.Message().Topic(), string(bs))
 		}
-		ctx.Client().Publish(ctx.Message().Topic() + "_reply", 0, false, bs)
+		replyTopic := strings.TrimPrefix(ctx.Message().Topic(),ServerTopicPrefix) 
+		replyTopic = fmt.Sprintf("%s%s_reply", DeviceTopicPrefix, replyTopic)
+		ctx.Client().Publish(replyTopic, 0, false, bs)
 	}
 }
 {{end}}
