@@ -134,10 +134,6 @@ func (r *Router) Handle(topic string, qos byte, handle Handle) {
 	if handle == nil {
 		panic("handle must not be nil")
 	}
-	// subscribe to topic
-	subscribeTopic := r.makeSubscribeTopic(topic)
-	r.Client.Subscribe(subscribeTopic, qos, r.serveMQTT)
-	log.Debugf("[router] subscribe to topic: %s", subscribeTopic)
 	// drop share-subscribe fields
 	if strings.HasPrefix(topic, "$share/") {
 		topic = strings.Join(strings.Split(topic, "/")[2:], "/")
@@ -164,6 +160,14 @@ func (r *Router) Handle(topic string, qos byte, handle Handle) {
 			return &ps
 		}
 	}
+}
+
+// Subscribe to topic
+func (r *Router) Subscribe(topic string, qos byte) {
+	// subscribe to topic
+	subscribeTopic := r.makeSubscribeTopic(topic)
+	r.Client.Subscribe(subscribeTopic, qos, r.serveMQTT)
+	log.Debugf("[router] subscribe to topic: %s", subscribeTopic)
 }
 
 // ServeMQTT makes the router implement the mqtt.MessageHandle interface.

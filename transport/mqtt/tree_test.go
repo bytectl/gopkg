@@ -5,14 +5,11 @@
 package mqtt
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
 	"testing"
-
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 // func printChildren(n *node, prefix string) {
@@ -29,7 +26,7 @@ import (
 var fakeHandlerValue string
 
 func fakeHandler(val string) Handle {
-	return func(context.Context, mqtt.Client, mqtt.Message) {
+	return func(Context) {
 		fakeHandlerValue = val
 	}
 }
@@ -58,7 +55,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests) {
 		case request.nilHandler:
 			t.Errorf("handle mismatch for route '%s': Expected nil handle", request.path)
 		default:
-			handler(nil, nil, nil)
+			handler(nil)
 			if fakeHandlerValue != request.route {
 				t.Errorf("handle mismatch for route '%s': Wrong handle (%s != %s)", request.path, fakeHandlerValue, request.route)
 			}
