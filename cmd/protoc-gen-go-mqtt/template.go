@@ -16,9 +16,12 @@ type {{.ServiceType}}MQTTServer interface {
 }
 
 func Register{{.ServiceType}}MQTTServer(r *mqtt.Router, srv {{.ServiceType}}MQTTServer) {
-	{{- range .Methods}}
-	r.Handle("{{.Path}}", 0, _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv))
+	{{- range .MethodSets}}
+	r.Handle("{{.Path}}", _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv))
 	{{- end}}
+	{{- range .Methods}}
+	r.Subscribe("{{.Path}}",0)
+	{{- end}}	
 }
 
 {{range .Methods}}

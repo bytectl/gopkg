@@ -124,7 +124,7 @@ func (r *Router) makeSubscribeTopic(topic string) string {
 }
 
 // Handle registers the handler for the given pattern.
-func (r *Router) Handle(topic string, qos byte, handle Handle) {
+func (r *Router) Handle(topic string, handle Handle) {
 	if r.Client == nil {
 		panic("router: router not initialized, not connected to mqtt broker")
 	}
