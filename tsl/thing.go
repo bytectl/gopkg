@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 )
@@ -205,6 +206,23 @@ func (s *Thing) ToEntityString() string {
 	return string(bs)
 }
 
+func (s *Thing) Random() string {
+	rand.Seed(time.Now().UnixNano())
+	var m struct {
+		Events   []*ThingEntity `json:"events"`
+		Services []*ThingEntity `json:"services"`
+	}
+	s.init() // initialize
+	for _, v := range s.Value.Services {
+		m.Services = append(m.Services, v.Random())
+	}
+	for _, v := range s.Value.Events {
+		m.Events = append(m.Events, v.Random())
+	}
+	bs, _ := json.MarshalIndent(m, "", "  ")
+	return string(bs)
+}
+
 type Profile struct {
 	ProductKey string
 	DeviceName string
@@ -247,6 +265,13 @@ func (s *Event) ValidateSpec() error {
 	if s.Method == "" {
 		return fmt.Errorf("method err: method is empty")
 	}
+	if !strings.HasPrefix(s.Method, "thing.event.") {
+		return fmt.Errorf("method err: method is thing.event.*")
+	}
+	_, err = NewThingMethod(s.Method)
+	if err != nil {
+		return fmt.Errorf("method err: %v", err)
+	}
 	for k, v := range s.OutputData {
 		err = v.ValidateSpec()
 		if err != nil {
@@ -285,6 +310,22 @@ func (s *Event) ToEntity() *ThingEntity {
 		Timestamp: time.Now().UnixMilli(),
 		Params:    outputBytes, // event 为上报, 参数到平台放outputData中
 		Method:    strings.Join(methodStrs, ", "),
+	}
+}
+
+func (s *Event) Random() *ThingEntity {
+	s.init() // initialize
+	inputData := make(map[string]interface{})
+	outputData := propertyToRandomMap(s.OutputData)
+	inputBytes, _ := json.Marshal(inputData)
+	outputBytes, _ := json.Marshal(outputData)
+	return &ThingEntity{
+		ID:        fmt.Sprintf("%d", rand.Int63()),
+		Version:   "1.0",
+		Timestamp: time.Now().UnixMilli(),
+		Params:    inputBytes,
+		Data:      outputBytes,
+		Method:    s.Method,
 	}
 }
 
@@ -327,6 +368,13 @@ func (s *Service) ValidateSpec() error {
 	}
 	if s.Method == "" {
 		return fmt.Errorf("method err: method is empty")
+	}
+	if !strings.HasPrefix(s.Method, "thing.service.") {
+		return fmt.Errorf("method err: method is thing.service.*")
+	}
+	_, err = NewThingMethod(s.Method)
+	if err != nil {
+		return fmt.Errorf("method err: %v", err)
 	}
 	for k, v := range s.InputData {
 		err = v.ValidateSpec()
@@ -382,6 +430,21 @@ func (s *Service) ToEntity() *ThingEntity {
 		Params:    inputBytes,
 		Data:      outputBytes,
 		Method:    strings.Join(methodStrs, ","),
+	}
+}
+func (s *Service) Random() *ThingEntity {
+	s.init() // initialize
+	inputData := propertyToRandomMap(s.InputData)
+	outputData := propertyToRandomMap(s.OutputData)
+	inputBytes, _ := json.Marshal(inputData)
+	outputBytes, _ := json.Marshal(outputData)
+	return &ThingEntity{
+		ID:        fmt.Sprintf("%d", rand.Int63()),
+		Version:   "1.0",
+		Timestamp: time.Now().UnixMilli(),
+		Params:    inputBytes,
+		Data:      outputBytes,
+		Method:    s.Method,
 	}
 }
 

@@ -3,8 +3,12 @@ package tsl
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/gogf/gf/util/grand"
 )
 
 // 校验接口
@@ -15,6 +19,8 @@ type Validator interface {
 	ValidateValue(value interface{}) error
 	// 转换为物模型实例
 	ToEntityString() string
+	// 随机值生成
+	Random() interface{}
 }
 
 // 数据类型
@@ -38,7 +44,7 @@ var TypeSpecRegister = map[string]func([]byte) (Validator, error){
 	"bool":   NewBooleanSpec,
 	"array":  NewArraySpec,
 	"struct": NewStructSpec,
-	"date":   NewEmptySpec,
+	"date":   NewDateSpec,
 }
 
 func (s *DataType) init() error {
@@ -82,8 +88,11 @@ func (s *DataType) ValidateSpec() error {
 }
 
 func (s *DataType) ValidateValue(value interface{}) error {
-	s.init() // 初始化
-	err := s.Value.Specs.ValidateValue(value)
+	err := s.init() // 初始化
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+	err = s.Value.Specs.ValidateValue(value)
 	if err != nil {
 		return fmt.Errorf("%v.%v", s.Type, err)
 	}
@@ -98,22 +107,32 @@ func (s *DataType) ToEntityString() string {
 	}
 	return s.Value.Specs.ToEntityString()
 }
-
-type EmptySpec struct{}
-
-func NewEmptySpec(bs []byte) (Validator, error) {
-	return &EmptySpec{}, nil
+func (s *DataType) Random() interface{} {
+	err := s.init() // 初始化
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+	return s.Value.Specs.Random()
 }
-func (s *EmptySpec) ValidateSpec() error {
+
+type DateSpec struct{}
+
+func NewDateSpec(bs []byte) (Validator, error) {
+	return &DateSpec{}, nil
+}
+func (s *DateSpec) ValidateSpec() error {
 	fmt.Println("note: empty validateSpec.....")
 	return nil
 }
-func (s *EmptySpec) ValidateValue(value interface{}) error {
+func (s *DateSpec) ValidateValue(value interface{}) error {
 	fmt.Println("note: empty validateValue.....")
 	return nil
 }
-func (s *EmptySpec) ToEntityString() string {
-	return ""
+func (s *DateSpec) ToEntityString() string {
+	return "unix时间戳(ms)"
+}
+func (s *DateSpec) Random() interface{} {
+	return time.Now().UnixMilli()
 }
 
 // 数值类型
@@ -183,6 +202,10 @@ func (s *DigitalSpec) ToEntityString() string {
 	return spec
 }
 
+func (s *DigitalSpec) Random() interface{} {
+	return rand.Intn(s.Value.Max-s.Value.Min+1) + s.Value.Min
+}
+
 // 数值类型
 type FloatSpec struct {
 	Max      string
@@ -249,6 +272,10 @@ func (s *FloatSpec) ToEntityString() string {
 	return spec
 }
 
+func (s *FloatSpec) Random() interface{} {
+	return rand.Float64()*(s.Value.Max-s.Value.Min+1) + s.Value.Min
+}
+
 // 字符串类型
 type TextSpec struct {
 	Length string
@@ -299,6 +326,11 @@ func (s *TextSpec) ToEntityString() string {
 	return spec
 }
 
+func (s *TextSpec) Random() interface{} {
+	n := rand.Intn(s.Value.Length + 1)
+	return grand.Letters(n)
+}
+
 // 布尔类型
 type BooleanSpec struct {
 	FalseValue string `json:"0"`
@@ -342,6 +374,10 @@ func (s *BooleanSpec) ValidateValue(value interface{}) error {
 func (s *BooleanSpec) ToEntityString() string {
 	spec := fmt.Sprintf("0-%v,1-%v", s.FalseValue, s.TrueValue)
 	return spec
+}
+
+func (s *BooleanSpec) Random() interface{} {
+	return rand.Intn(2)
 }
 
 // 枚举类型
@@ -402,6 +438,20 @@ func (s *EnumSpec) ToEntityString() string {
 	}
 	return strings.Join(specs, ",")
 }
+func (s *EnumSpec) Random() interface{} {
+	n := rand.Intn(len(s.Specs))
+	for k := range s.Specs {
+		if 0 == n {
+			i, err := strconv.Atoi(k)
+			if err != nil {
+				return 0
+			}
+			return i
+		}
+		n--
+	}
+	return 0
+}
 
 // 数组类型
 type ArraySpec struct {
@@ -458,10 +508,18 @@ func (s *ArraySpec) ValidateValue(value interface{}) error {
 	return nil
 }
 
+func (s *ArraySpec) Random() interface{} {
+	arrayValue := []interface{}{}
+	for i := 0; i < s.Value.Size; i++ {
+		arrayValue = append(arrayValue, s.Item.Random())
+	}
+	return arrayValue
+}
+
 func (s *ArraySpec) ToEntityString() string {
 	var items []interface{}
 	str := fmt.Sprintf("%v,%v,size:%v", s.Item.Type, s.Item.ToEntityString(), s.Value.Size)
-	if s.Item.Type == "struct" || s.Item.Type == "array" {
+	if s.Item.Type == "struct" {
 
 		vm := map[string]interface{}{}
 		err := json.Unmarshal([]byte(s.Item.ToEntityString()), &vm)
@@ -545,6 +603,14 @@ func (s *StructSpec) ToEntityString() string {
 	return string(bs)
 }
 
+func (s *StructSpec) Random() interface{} {
+	m := map[string]interface{}{}
+	for _, v := range s.Properties {
+		m[v.Identifier] = v.Random()
+	}
+	return m
+}
+
 // 属性
 type Property struct {
 	AccessMode string
@@ -594,6 +660,10 @@ func (s *Property) ToEntityString() string {
 	return strings.Join(specs, ",")
 }
 
+func (s *Property) Random() interface{} {
+	return s.DataType.Random()
+}
+
 func propertiesToMap(ps []*Property) map[string]*Property {
 	paramsMap := make(map[string]*Property)
 	for _, v := range ps {
@@ -624,6 +694,14 @@ func propertyToEntityMap(p []*Property) map[string]interface{} {
 			}
 			m[v.Identifier] = tm
 		}
+	}
+	return m
+}
+
+func propertyToRandomMap(p []*Property) map[string]interface{} {
+	m := map[string]interface{}{}
+	for _, v := range p {
+		m[v.Identifier] = v.Random()
 	}
 	return m
 }

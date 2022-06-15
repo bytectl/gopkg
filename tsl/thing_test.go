@@ -180,5 +180,6 @@ func executeToEntityTests(t *testing.T, path string) error {
 		return nil
 	}
 	fmt.Println(test.Model.ToEntityString())
+	fmt.Println(test.Model.Random())
 	return nil
 }
