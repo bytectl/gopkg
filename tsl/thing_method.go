@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	MethodCellLength         = 4
+	MethodCellMinLength      = 3
+	MethodCellMaxLength      = 4
 	MethodClassifyIndex      = 1
 	MethodActionIndex        = 2
 	MethodActionPropertyName = "property"
@@ -24,11 +25,14 @@ type ThingMethod struct {
 func NewThingMethod(method string) (*ThingMethod, error) {
 	isProperty := false
 	strs := strings.Split(method, ".")
-	if len(strs) < MethodCellLength {
+	if len(strs) < MethodCellMinLength {
 		return nil, fmt.Errorf("method(%s) is invalid", method)
 	}
 	action := strs[MethodActionIndex]
 	if strings.Compare(action, MethodActionPropertyName) == 0 {
+		if len(strs) < MethodCellMaxLength {
+			return nil, fmt.Errorf("method(%s) is invalid", method)
+		}
 		action = strs[MethodActionIndex+1]
 		isProperty = true
 	}
