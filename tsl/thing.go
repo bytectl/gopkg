@@ -9,6 +9,24 @@ import (
 	"time"
 )
 
+type EntityRequest struct {
+	ID        string          `json:"id"`      // 消息ID，String类型的数字，取值范围0~4294967295，且每个消息ID在当前设备中具有唯一性。
+	Version   string          `json:"version"` // 协议版本号，目前协议版本号唯一取值为1.0。
+	Params    json.RawMessage `json:"params,omitempty"`
+	Method    string          `json:"method"`
+	Timestamp int64           `json:"timestamp"`
+	// Sys        interface{} `json:"sys,omitempty"` //	扩展功能的参数，其下包含各功能字段。
+}
+
+type EntityReply struct {
+	ID        string          `json:"id"`      // 消息ID，String类型的数字，取值范围0~4294967295，且每个消息ID在当前设备中具有唯一性。
+	Version   string          `json:"version"` // 协议版本号，目前协议版本号唯一取值为1.0。
+	Data      json.RawMessage `json:"data,omitempty"`
+	Method    string          `json:"method"`
+	Timestamp int64           `json:"timestamp"`
+	// Sys        interface{} `json:"sys,omitempty"` //	扩展功能的参数，其下包含各功能字段。
+}
+
 type ThingEntity struct {
 	ID        string          `json:"id"`      // 消息ID，String类型的数字，取值范围0~4294967295，且每个消息ID在当前设备中具有唯一性。
 	Version   string          `json:"version"` // 协议版本号，目前协议版本号唯一取值为1.0。
@@ -206,20 +224,71 @@ func (s *Thing) ToEntityString() string {
 	return string(bs)
 }
 
-func (s *Thing) Random() string {
+func (s *Thing) RandomAll() string {
 	rand.Seed(time.Now().UnixNano())
 	var m struct {
-		Events   []*ThingEntity `json:"events"`
-		Services []*ThingEntity `json:"services"`
+		Events   []*EntityRequest `json:"events"`
+		Services []*EntityRequest `json:"services"`
 	}
+
 	s.init() // initialize
 	for _, v := range s.Value.Services {
-		m.Services = append(m.Services, v.Random())
+		e := v.Random(true)
+		m.Services = append(m.Services, &EntityRequest{
+			ID:        e.ID,
+			Version:   e.Version,
+			Method:    e.Method,
+			Params:    e.Params,
+			Timestamp: e.Timestamp,
+		})
 	}
 	for _, v := range s.Value.Events {
-		m.Events = append(m.Events, v.Random())
+		e := v.Random(true)
+		m.Events = append(m.Events, &EntityRequest{
+			ID:        e.ID,
+			Version:   e.Version,
+			Method:    e.Method,
+			Params:    e.Params,
+			Timestamp: e.Timestamp,
+		})
 	}
 	bs, _ := json.MarshalIndent(m, "", "  ")
+	return string(bs)
+}
+
+func (s *Thing) Random(method string, generateAllProperty bool) string {
+
+	var entity *ThingEntity
+	rand.Seed(time.Now().UnixNano())
+	s.init() // initialize
+	tmethod, err := NewThingMethod(method)
+	if err != nil {
+		return "{}"
+	}
+	if tmethod.IsService() {
+		tm := s.Value.Services[tmethod.Action]
+		if tm == nil {
+			fmt.Printf("service.%s no found", tmethod.Action)
+			return "{}"
+		}
+		entity = tm.Random(generateAllProperty)
+	} else {
+		tm := s.Value.Events[tmethod.Action]
+		if tm == nil {
+			fmt.Printf("event.%s no found", tmethod.Action)
+			return "{}"
+		}
+		entity = tm.Random(generateAllProperty)
+	}
+
+	ereq := &EntityRequest{
+		ID:        entity.ID,
+		Version:   entity.Version,
+		Method:    entity.Method,
+		Params:    entity.Params,
+		Timestamp: entity.Timestamp,
+	}
+	bs, _ := json.MarshalIndent(ereq, "", "  ")
 	return string(bs)
 }
 
@@ -313,11 +382,20 @@ func (s *Event) ToEntity() *ThingEntity {
 	}
 }
 
-func (s *Event) Random() *ThingEntity {
+func (s *Event) Random(generateAllProperty bool) *ThingEntity {
 	s.init() // initialize
 	inputData := make(map[string]interface{})
-	outputData := propertyToRandomMap(s.OutputData)
 	inputBytes, _ := json.Marshal(inputData)
+
+	tmethod, err := NewThingMethod(s.Method)
+	if err != nil {
+		return &ThingEntity{}
+	}
+	outputData := propertyRandomValueToMap(s.OutputData)
+	if tmethod.IsProperty && generateAllProperty == false {
+		// 随机生成属性和属性值propertyRandomAndRandomValueToMap
+		outputData = propertyRandomAndRandomValueToMap(s.OutputData)
+	}
 	outputBytes, _ := json.Marshal(outputData)
 	return &ThingEntity{
 		ID:        fmt.Sprintf("%d", rand.Int63()),
@@ -432,10 +510,18 @@ func (s *Service) ToEntity() *ThingEntity {
 		Method:    strings.Join(methodStrs, ","),
 	}
 }
-func (s *Service) Random() *ThingEntity {
+func (s *Service) Random(generateAllProperty bool) *ThingEntity {
 	s.init() // initialize
-	inputData := propertyToRandomMap(s.InputData)
-	outputData := propertyToRandomMap(s.OutputData)
+	inputData := propertyRandomValueToMap(s.InputData)
+	outputData := propertyRandomValueToMap(s.OutputData)
+	tmethod, err := NewThingMethod(s.Method)
+	if err != nil {
+		return &ThingEntity{}
+	}
+	if tmethod.IsProperty && tmethod.IsSet && generateAllProperty == false {
+		// 随机生成属性和属性值propertyRandomAndRandomValueToMap
+		inputData = propertyRandomAndRandomValueToMap(s.InputData)
+	}
 	inputBytes, _ := json.Marshal(inputData)
 	outputBytes, _ := json.Marshal(outputData)
 	return &ThingEntity{

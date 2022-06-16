@@ -698,9 +698,41 @@ func propertyToEntityMap(p []*Property) map[string]interface{} {
 	return m
 }
 
-func propertyToRandomMap(p []*Property) map[string]interface{} {
+// 随机生成属性值转map
+func propertyRandomValueToMap(p []*Property) map[string]interface{} {
 	m := map[string]interface{}{}
 	for _, v := range p {
+		m[v.Identifier] = v.Random()
+	}
+	return m
+}
+
+// 随机生成属性和属性值转map
+func propertyRandomAndRandomValueToMap(p []*Property) map[string]interface{} {
+
+	// 属性数量
+
+	count := len(p)
+	seq := p
+	if count != 0 {
+		rand.Seed(time.Now().UnixNano())
+		n := rand.Intn(count)
+		// 需要删除元素个数
+		dn := len(p) - n
+		for i := 0; i < dn; i++ {
+
+			count := len(seq)
+			if count == 1 {
+				break
+			}
+			rand.Seed(time.Now().UnixNano())
+			// 需要删除的元素索引
+			index := rand.Intn(count)
+			seq = append(seq[:index], seq[index+1:]...)
+		}
+	}
+	m := map[string]interface{}{}
+	for _, v := range seq {
 		m[v.Identifier] = v.Random()
 	}
 	return m
