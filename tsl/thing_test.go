@@ -185,7 +185,7 @@ func executeToEntityTests(t *testing.T, path string) error {
 	// fmt.Println(test.Model.Random("thing.service.property.set", true))
 	// fmt.Println(test.Model.Random("thing.event.property.post", false))
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 1; i++ {
 		result, err := test.Model.Random("thing.event.property.post", false)
 		if err != nil {
 			t.Errorf("Error (%s)\n", err.Error())
@@ -194,6 +194,14 @@ func executeToEntityTests(t *testing.T, path string) error {
 		fmt.Println(string(result))
 	}
 
+	for i := 0; i < 1; i++ {
+		result, err := test.Model.Random("thing.service.property.get", false)
+		if err != nil {
+			t.Errorf("Error (%s)\n", err.Error())
+			return err
+		}
+		fmt.Println(string(result))
+	}
 	// fmt.Println(test.Model.Random("thing.service.reset", true))
 
 	return nil

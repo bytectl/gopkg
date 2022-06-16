@@ -19,8 +19,8 @@ type EntityRequest struct {
 }
 
 type EntityReply struct {
-	ID        string          `json:"id"`      // 消息ID，String类型的数字，取值范围0~4294967295，且每个消息ID在当前设备中具有唯一性。
-	Version   string          `json:"version"` // 协议版本号，目前协议版本号唯一取值为1.0。
+	ID        string          `json:"id"` // 消息ID，String类型的数字，取值范围0~4294967295，且每个消息ID在当前设备中具有唯一性。
+	Code      int             `json:"code"`
 	Data      json.RawMessage `json:"data,omitempty"`
 	Method    string          `json:"method"`
 	Timestamp int64           `json:"timestamp"`
@@ -290,12 +290,22 @@ func (s *Thing) Random(method string, generateAllProperty bool) ([]byte, error) 
 		}
 	}
 
-	ereq := &EntityRequest{
+	var ereq interface{}
+	ereq = &EntityRequest{
 		ID:        entity.ID,
 		Version:   entity.Version,
 		Method:    entity.Method,
 		Params:    entity.Params,
 		Timestamp: entity.Timestamp,
+	}
+	if tmethod.IsGet {
+		ereq = &EntityReply{
+			ID:        entity.ID,
+			Code:      0,
+			Method:    entity.Method,
+			Data:      entity.Data,
+			Timestamp: entity.Timestamp,
+		}
 	}
 	bs, err := json.MarshalIndent(ereq, "", "  ")
 	return bs, err
