@@ -719,22 +719,17 @@ func propertyRandomAndRandomValueToMap(p []*Property) map[string]interface{} {
 		for i := 0; i < count; i++ {
 			seq = append(seq, p[i])
 		}
-		rand.Seed(time.Now().UnixNano())
-		n := rand.Intn(count)
-		// 需要删除元素个数
-		dn := len(p) - n
-		for i := 0; i < dn; i++ {
-
-			count := len(seq)
-			if count == 1 {
-				break
-			}
+		// // 随机排序
+		for i := 0; i < count; i++ {
 			rand.Seed(time.Now().UnixNano())
-			// 需要删除的元素索引
-			index := rand.Intn(count)
-			seq = append(seq[:index], seq[index+1:]...)
+			j := rand.Intn(count)
+			seq[i], seq[j] = seq[j], seq[i]
 		}
+		n := rand.Intn(count)
+		// 取n个属性
+		seq = seq[:n+1]
 	}
+
 	m := map[string]interface{}{}
 	for _, v := range seq {
 		m[v.Identifier] = v.Random()

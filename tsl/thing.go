@@ -410,7 +410,7 @@ func (s *Event) Random(generateAllProperty bool) (*ThingEntity, error) {
 		return nil, fmt.Errorf("Event.Random, err: %v", err)
 	}
 	return &ThingEntity{
-		ID:        fmt.Sprintf("%d", rand.Int63()),
+		ID:        fmt.Sprintf("%d", rand.Int31()),
 		Version:   "1.0",
 		Timestamp: time.Now().UnixMilli(),
 		Params:    outputBytes,
@@ -545,7 +545,7 @@ func (s *Service) Random(generateAllProperty bool) (*ThingEntity, error) {
 		return nil, fmt.Errorf("Service.Random, err: %v", err)
 	}
 	return &ThingEntity{
-		ID:        fmt.Sprintf("%d", rand.Int63()),
+		ID:        fmt.Sprintf("%d", rand.Int31()),
 		Version:   "1.0",
 		Timestamp: time.Now().UnixMilli(),
 		Params:    inputBytes,
