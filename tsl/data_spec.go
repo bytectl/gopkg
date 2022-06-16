@@ -711,10 +711,14 @@ func propertyRandomValueToMap(p []*Property) map[string]interface{} {
 func propertyRandomAndRandomValueToMap(p []*Property) map[string]interface{} {
 
 	// 属性数量
-
 	count := len(p)
 	seq := p
 	if count != 0 {
+		seq = make([]*Property, 0, count)
+		// copy slice
+		for i := 0; i < count; i++ {
+			seq = append(seq, p[i])
+		}
 		rand.Seed(time.Now().UnixNano())
 		n := rand.Intn(count)
 		// 需要删除元素个数
