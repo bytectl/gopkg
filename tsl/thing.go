@@ -33,6 +33,7 @@ type ThingEntity struct {
 	Params    json.RawMessage `json:"params,omitempty"`
 	Method    string          `json:"method"`
 	Timestamp int64           `json:"timestamp"`
+	Code      int             `json:"code"`
 	Data      json.RawMessage `json:"data,omitempty"`
 	// Sys        interface{} `json:"sys,omitempty"` //	扩展功能的参数，其下包含各功能字段。
 }
@@ -290,24 +291,7 @@ func (s *Thing) Random(method string, generateAllProperty bool) ([]byte, error) 
 		}
 	}
 
-	var ereq interface{}
-	ereq = &EntityRequest{
-		ID:        entity.ID,
-		Version:   entity.Version,
-		Method:    entity.Method,
-		Params:    entity.Params,
-		Timestamp: entity.Timestamp,
-	}
-	if tmethod.IsGet {
-		ereq = &EntityReply{
-			ID:        entity.ID,
-			Code:      0,
-			Method:    entity.Method,
-			Data:      entity.Data,
-			Timestamp: entity.Timestamp,
-		}
-	}
-	bs, err := json.MarshalIndent(ereq, "", "  ")
+	bs, err := json.MarshalIndent(entity, "", "  ")
 	return bs, err
 }
 
