@@ -553,7 +553,7 @@ func NewStructSpec(bs []byte) (Validator, error) {
 		Properties: properties,
 	}
 	structSpec.Value.Properties = propertiesToMap(structSpec.Properties)
-	return &StructSpec{Properties: properties}, nil
+	return structSpec, nil
 }
 
 func (s *StructSpec) ValidateSpec() error {
