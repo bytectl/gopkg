@@ -61,6 +61,8 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 	g.P("var _ = new(", contextPackage.Ident("Context"), ")")
 	g.P("var jsonCodec =", encodingPackage.Ident("GetCodec(json.Name)"))
 	g.P("var formCodec =", encodingPackage.Ident("GetCodec(form.Name)"))
+	g.P("var glog =", logPackage.Ident("NewHelper(log.DefaultLogger)"))
+
 	g.P("const ServerTopicPrefix = \"/sys\"")
 	g.P("const DeviceTopicPrefix = \"/device\"")
 

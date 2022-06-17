@@ -14,7 +14,9 @@ type {{.ServiceType}}MQTTServer interface {
 	{{.Name}}(mqtt.Context,*{{.Request}}) (*{{.Reply}}, error)
 {{- end}}
 }
-
+func SetLogger(logger log.Logger){
+	glog = log.NewHelper(logger)
+}
 func Register{{.ServiceType}}MQTTServer(r *mqtt.Router, srv {{.ServiceType}}MQTTServer) {
 	{{- range .MethodSets}}
 	r.Handle("{{.Path}}", _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv))
@@ -30,33 +32,35 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 		var in {{.Request}}
 		err := jsonCodec.Unmarshal(ctx.Message().Payload(), &in)
 		if err != nil {
-			log.Error("message error:", err)
+			glog.Error("message error:", err)
 			return
 		}
+		glog.Debugf("receive mqtt topic:%v, body: %v", ctx.Message().Topic(), string(ctx.Message().Payload()))
 		vars := mqtt.ParamsFromContext(ctx)
 		err = formCodec.Unmarshal([]byte(vars.Encode()), &in)
 		if err != nil {
-			log.Error("var Params error:", err)
+			glog.Error("var Params error:", err)
 		}
 		err = in.Validate()
 		if err != nil {
-			log.Error("validate error:", err)
+			glog.Error("validate error:", err)
 			return
 		}
+		glog.Debugf("receive mqtt request:%+v",in)
 		reply, err := srv.{{.Name}}(ctx, &in)
 		if err != nil {
-			log.Error("{{.Name}} error:", err)
+			glog.Error("{{.Name}} error:", err)
 		}
 		if reply == nil {
 			return
 		}
 		bs, err := jsonCodec.Marshal(reply)
 		if err != nil {
-			log.Errorf("topic:%v, err: %v", ctx.Message().Topic(), err)
+			glog.Errorf("topic:%v, err: %v", ctx.Message().Topic(), err)
 			return
-		} else {
-			log.Debugf("reply mqtt topic:%v,body: %v", ctx.Message().Topic(), string(bs))
-		}
+		} 
+
+		glog.Debugf("reply mqtt topic:%v,body: %v", ctx.Message().Topic(), string(bs))
 		replyTopic := strings.TrimPrefix(ctx.Message().Topic(),ServerTopicPrefix) 
 		replyTopic = fmt.Sprintf("%s%s_reply", DeviceTopicPrefix, replyTopic)
 		ctx.Client().Publish(replyTopic, 0, false, bs)
