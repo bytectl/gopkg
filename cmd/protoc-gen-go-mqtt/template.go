@@ -29,15 +29,15 @@ func Register{{.ServiceType}}MQTTServer(r *mqtt.Router, srv {{.ServiceType}}MQTT
 {{range .Methods}}
 func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) func(mqtt.Context)  {
 	return func(ctx mqtt.Context)  {
-		var in {{.Request}}
-		err := jsonCodec.Unmarshal(ctx.Message().Payload(), &in)
+		in :=&{{.Request}}{}
+		err := jsonCodec.Unmarshal(ctx.Message().Payload(), in)
 		if err != nil {
 			glog.Error("message error:", err)
 			return
 		}
 		glog.Debugf("receive mqtt topic:%v, body: %v", ctx.Message().Topic(), string(ctx.Message().Payload()))
 		vars := mqtt.ParamsFromContext(ctx)
-		err = formCodec.Unmarshal([]byte(vars.Encode()), &in)
+		err = formCodec.Unmarshal([]byte(vars.Encode()), in)
 		if err != nil {
 			glog.Error("var Params error:", err)
 		}
@@ -47,7 +47,7 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 			return
 		}
 		glog.Debugf("receive mqtt request:%+v",in)
-		reply, err := srv.{{.Name}}(ctx, &in)
+		reply, err := srv.{{.Name}}(ctx, in)
 		if err != nil {
 			glog.Error("{{.Name}} error:", err)
 		}
@@ -59,11 +59,10 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 			glog.Errorf("topic:%v, err: %v", ctx.Message().Topic(), err)
 			return
 		} 
-
-		glog.Debugf("reply mqtt topic:%v,body: %v", ctx.Message().Topic(), string(bs))
 		replyTopic := strings.TrimPrefix(ctx.Message().Topic(),ServerTopicPrefix) 
 		replyTopic = fmt.Sprintf("%s%s_reply", DeviceTopicPrefix, replyTopic)
 		ctx.Client().Publish(replyTopic, 0, false, bs)
+		glog.Debugf("reply mqtt topic:%v,body: %v", replyTopic, string(bs))
 	}
 }
 {{end}}
