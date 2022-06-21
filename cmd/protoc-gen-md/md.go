@@ -195,11 +195,12 @@ func fieldsToMap(message *protogen.Message, method string, ptype int32) map[stri
 			m := message.Fields[i].Message
 
 			//if m.Desc.Fields().Get(0).JSONName() != "fields" {
-			if m.Desc.FullName() != "google.protobuf.Struct" {
+			if !strings.HasPrefix(string(m.Desc.FullName()), "google.protobuf") {
+				//fmt.Fprintf(os.Stderr, "\u001B[31mWARN\u001B[m: %s %s is not a valid message.\n", method, m.Desc.FullName())
 				param[fd.JSONName()] = fieldsToMap(m, method, ptype)
 				continue
 			} else {
-				param[fd.JSONName()] = "struct"
+				param[fd.JSONName()] = m.Desc.FullName()
 				continue
 			}
 		}
