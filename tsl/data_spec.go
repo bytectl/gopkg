@@ -237,9 +237,12 @@ func NewFloatSpec(bs []byte) (Validator, error) {
 	if err != nil {
 		return nil, fmt.Errorf("(float).min err: %v", err)
 	}
-	step, err := strconv.ParseFloat(spec.Step, 64)
-	if err != nil {
-		return nil, fmt.Errorf("(float).step err: %v", err)
+	step := float64(0)
+	if len(spec.Step) != 0 {
+		step, err = strconv.ParseFloat(spec.Step, 64)
+		if err != nil {
+			return nil, fmt.Errorf("(float).step err: %v", err)
+		}
 	}
 	spec.Value.Max = max
 	spec.Value.Min = min
