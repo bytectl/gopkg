@@ -155,11 +155,11 @@ func NewDigitalSpec(bs []byte) (Validator, error) {
 	if err != nil {
 		return nil, fmt.Errorf("(digital) err: %v", err)
 	}
-	max, err := strconv.ParseUint(spec.Max, 10, 64)
+	max, err := strconv.ParseInt(spec.Max, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("(digital).max err: %v", err)
 	}
-	min, err := strconv.ParseUint(spec.Min, 10, 64)
+	min, err := strconv.ParseInt(spec.Min, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("(digital).min err: %v", err)
 	}
