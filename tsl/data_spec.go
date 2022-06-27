@@ -163,9 +163,12 @@ func NewDigitalSpec(bs []byte) (Validator, error) {
 	if err != nil {
 		return nil, fmt.Errorf("(digital).min err: %v", err)
 	}
-	step, err := strconv.ParseUint(spec.Step, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("(digital).step err: %v", err)
+	step := uint64(0)
+	if len(spec.Step) != 0 {
+		step, err = strconv.ParseUint(spec.Step, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("(digital).step err: %v", err)
+		}
 	}
 	spec.Value.Max = int(max)
 	spec.Value.Min = int(min)
