@@ -86,7 +86,6 @@ type Router struct {
 	paramsPool     sync.Pool
 	maxParams      uint16
 	NotFoundHandle Handle
-	Client         mqtt.Client
 }
 
 // New returns a new initialized Router.
@@ -160,13 +159,13 @@ func (r *Router) Handle(topic string, handle Handle) {
 }
 
 // Subscribe to topic
-func (r *Router) Subscribe(topic string, qos byte) {
-	if r.Client == nil {
-		panic("router: router not initialized, not connected to mqtt broker")
+func (r *Router) Subscribe(c mqtt.Client, topic string, qos byte) {
+	if c == nil {
+		panic("router: client must not be nil")
 	}
 	// subscribe to topic
 	subscribeTopic := r.makeSubscribeTopic(topic)
-	r.Client.Subscribe(subscribeTopic, qos, r.serveMQTT)
+	c.Subscribe(subscribeTopic, qos, r.serveMQTT)
 	log.Debugf("[router] subscribe to topic: %s", subscribeTopic)
 }
 

@@ -18,10 +18,10 @@ func SetLogger(logger log.Logger){
 	glog = log.NewHelper(logger)
 }
 
-func Subscribe{{.ServiceType}}(r *mqtt.Router) {
+func Subscribe{{.ServiceType}}(c paho_mqtt_golang.Client, r *mqtt.Router) {
 	{{- range .Methods}}
-	r.Subscribe("{{.Path}}",0)
-	{{- end}}	
+	r.Subscribe(c,"{{.Path}}",0)
+	{{- end}}
 }
 
 func Register{{.ServiceType}}MQTTServer(r *mqtt.Router, srv {{.ServiceType}}MQTTServer) {
