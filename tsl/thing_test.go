@@ -206,3 +206,55 @@ func executeToEntityTests(t *testing.T, path string) error {
 
 	return nil
 }
+
+// 测试生成go codec代码
+func TestGenGoCodec(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err.Error())
+	}
+	wd = filepath.Join(wd, "testdata/model")
+
+	err = filepath.Walk(wd, func(path string, fileInfo os.FileInfo, err error) error {
+		if fileInfo.IsDir() && path != wd {
+			return filepath.SkipDir
+		}
+		if !strings.HasSuffix(fileInfo.Name(), ".json") {
+			return nil
+		}
+		return executeGenGoCodec(t, path)
+	})
+	if err != nil {
+		t.Errorf("Error (%s)\n", err.Error())
+	}
+}
+
+func executeGenGoCodec(t *testing.T, path string) error {
+	var test struct {
+		Model *Thing
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		t.Errorf("Error (%s)\n", err.Error())
+		return err
+	}
+	defer file.Close()
+
+	fmt.Println(file.Name())
+
+	d := json.NewDecoder(file)
+	err = d.Decode(&test)
+	if err != nil {
+		t.Errorf("Error (%s)\n", err.Error())
+		return err
+	}
+	filename := filepath.Base(path)
+	if test.Model == nil {
+		t.Logf("file: %s, Expected model but got nil\n", filename)
+		return nil
+	}
+	codec := test.Model.GenerateGoDeCodec()
+	fmt.Println(codec)
+	return nil
+}

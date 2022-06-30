@@ -7,6 +7,8 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/huandu/xstrings"
 )
 
 type EntityRequest struct {
@@ -295,6 +297,25 @@ func (s *Thing) Random(method string, generateAllProperty bool) ([]byte, error) 
 	return bs, err
 }
 
+func (s *Thing) GenerateGoDeCodec() string {
+
+	s.init() // initialize
+	var arr []string
+	codecPrefix := strings.ReplaceAll(CodecPrefix, "CODEBLOCK", "`")
+	for _, v := range s.Value.Events {
+		prefix := "Event" + xstrings.ToCamelCase(v.Identifier)
+		if prefix == "EventPost" {
+			prefix = "EventProperty"
+		}
+		arr = append(arr, fmt.Sprintf("const %sMethod = %q ", prefix, v.Method))
+	}
+	arr = append(arr, "\n")
+	for _, v := range s.Value.Events {
+		arr = append(arr, v.GenerateGoCodec())
+	}
+	return codecPrefix + strings.Join(arr, "\n") + CodecTail
+}
+
 type Profile struct {
 	ProductKey string
 	DeviceName string
@@ -411,6 +432,18 @@ func (s *Event) Random(generateAllProperty bool) (*ThingEntity, error) {
 		Data:      inputBytes,
 		Method:    s.Method,
 	}, nil
+}
+
+func (s *Event) GenerateGoCodec() string {
+	prefix := "Event" + xstrings.ToCamelCase(s.Identifier)
+	if prefix == "EventPost" {
+		prefix = ""
+	}
+	var arr []string
+	for _, v := range s.OutputData {
+		arr = append(arr, v.GenerateGoCodec(prefix))
+	}
+	return strings.Join(arr, "\n")
 }
 
 // 服务
@@ -546,6 +579,10 @@ func (s *Service) Random(generateAllProperty bool) (*ThingEntity, error) {
 		Data:      outputBytes,
 		Method:    s.Method,
 	}, nil
+}
+
+func (s *Service) GenerateGoCodec() string {
+	return ""
 }
 
 func validateEntityParams(specData map[string]*Property, data []byte) error {
