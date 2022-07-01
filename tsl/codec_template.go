@@ -1,6 +1,6 @@
 package tsl
 
-var DefaultCodecTmpl = `// xxx 产品编解码插件
+var DefaultCodecTmpl = `// {{ .Profile.ProductKey }} 产品编解码插件
 package codec
 
 import (
@@ -27,8 +27,7 @@ const ({{range .Value.Events}}
 {{- range .Value.Events}}
 {{$prefixName := camelcase .ParamPrefixName}}
 {{- range .OutputData}}func (p Params) Set{{ $prefixName }}{{- camelcase .Identifier }}(v {{.DataType.GenerateGoType -}}) { p["{{- .Identifier -}}"] = v } // {{.Name}}
-{{end -}}
-{{end -}}
+{{end -}}{{end -}}
 
 // 解码	
 func Decode(payload, metadata []byte) ([]byte, error) {
@@ -39,7 +38,7 @@ func Decode(payload, metadata []byte) ([]byte, error) {
 		{{- range .Value.Events}}
 		{{$prefixName := camelcase .ParamPrefixName}}
 		{{- if not $prefixName }}
-		{{- range .OutputData}}//{{- camelcase .Identifier }}  {{.DataType.GenerateGoType}} 
+		{{- range .OutputData}}{{- camelcase .Identifier }}  {{.DataType.GenerateGoType}} 
 		{{end -}}{{end -}}{{end -}}
 	}
 	if err := binary.Read(buffer, binary.BigEndian, &decodeData); err != nil {
@@ -51,9 +50,8 @@ func Decode(payload, metadata []byte) ([]byte, error) {
 	{{- range .Value.Events}}
 	{{$prefixName := camelcase .ParamPrefixName}}
 	{{- if not $prefixName }}
-	{{- range .OutputData}}// params.Set{{- camelcase .Identifier }}(xxx) // {{.Name}}
+	{{- range .OutputData}}params.Set{{- camelcase .Identifier }}({{- camelcase .Identifier }} ) // {{.Name}}
 	{{end -}}{{end -}}{{end -}}
-	
 	//TODO: please make up your other event params
 
 	eventData := &EventData{
@@ -61,7 +59,7 @@ func Decode(payload, metadata []byte) ([]byte, error) {
 			{
 				Params: params,
 				//TODO: please change to you need event method
-				//Method: EventPropertyMethod,
+				Method: EventPropertyMethod,
 			},
 		},
 	}

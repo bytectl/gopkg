@@ -21,6 +21,7 @@ func (s *Thing) GenerateGoCodec(tp string) (string, error) {
 	}
 	str := buf.String()
 	str = strings.ReplaceAll(str, "CODEBLOCK", "`")
+	str = gofmt(str)
 	return str, nil
 
 }
