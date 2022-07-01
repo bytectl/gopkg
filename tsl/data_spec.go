@@ -118,6 +118,7 @@ func (s *DataType) Random() interface{} {
 func (s *DataType) GenerateGoType() string {
 	err := s.init() // 初始化
 	if err != nil {
+		fmt.Printf("GenerateGoType:%v", err)
 		return "unknown"
 	}
 	switch s.Type {
@@ -142,7 +143,6 @@ func (s *DataType) GenerateGoType() string {
 	default:
 		return "unknown"
 	}
-	return "unknown"
 }
 
 type DateSpec struct{}

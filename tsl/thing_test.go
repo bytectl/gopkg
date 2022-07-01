@@ -254,7 +254,11 @@ func executeGenGoCodec(t *testing.T, path string) error {
 		t.Logf("file: %s, Expected model but got nil\n", filename)
 		return nil
 	}
-	codec := test.Model.GenerateGoDeCodec()
+	codec, err := test.Model.GenerateGoCodec(DefaultCodecTmpl)
+	if err != nil {
+		t.Logf("Error (%s)\n", err.Error())
+		return nil
+	}
 	fmt.Println(codec)
 	return nil
 }

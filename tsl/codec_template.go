@@ -1,6 +1,6 @@
 package tsl
 
-var CodecPrefix = `// xxx 产品编解码插件
+var DefaultCodecTmpl = `// xxx 产品编解码插件
 package codec
 
 import (
@@ -20,31 +20,48 @@ type EventData struct {
 
 type Params map[string]interface{}
 
-`
-var CodecTail = `
+const ({{range .Value.Events}}
+	Event{{ camelcase .ConstName }} = "{{.Method}}"{{end}}
+)
+
+{{- range .Value.Events}}
+{{$prefixName := camelcase .ParamPrefixName}}
+{{- range .OutputData}}func (p Params) Set{{ $prefixName }}{{- camelcase .Identifier }}(v {{.DataType.GenerateGoType -}}) { p["{{- .Identifier -}}"] = v } // {{.Name}}
+{{end -}}
+{{end -}}
+
 // 解码	
 func Decode(payload, metadata []byte) ([]byte, error) {
 
 	buffer := bytes.NewBuffer(payload)
 	var decodeData struct {
-		//you decode fields   uint8
-	
+		//TODO: please change to you decode fields
+		{{- range .Value.Events}}
+		{{$prefixName := camelcase .ParamPrefixName}}
+		{{- if not $prefixName }}
+		{{- range .OutputData}}//{{- camelcase .Identifier }}  {{.DataType.GenerateGoType}} 
+		{{end -}}{{end -}}{{end -}}
 	}
 	if err := binary.Read(buffer, binary.BigEndian, &decodeData); err != nil {
 		return nil, err
 	}
 
 	params := make(Params)
-	// 构建参数
-	//params.Setxxx
+	//TODO: please set your params
+	{{- range .Value.Events}}
+	{{$prefixName := camelcase .ParamPrefixName}}
+	{{- if not $prefixName }}
+	{{- range .OutputData}}// params.Set{{- camelcase .Identifier }}(xxx) // {{.Name}}
+	{{end -}}{{end -}}{{end -}}
 	
-	// ... 
+	//TODO: please make up your other event params
 
 	eventData := &EventData{
 		Events: []Event{
 			{
 				Params: params,
-				// Method: EventPropertyMethod,
+				//TODO: please change to you need event method
+				//Method: EventPropertyMethod,
 			},
 		},
 	}

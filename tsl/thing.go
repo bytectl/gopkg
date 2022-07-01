@@ -1,14 +1,10 @@
 package tsl
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
-
-	"github.com/huandu/xstrings"
 )
 
 type EntityRequest struct {
@@ -120,41 +116,6 @@ func (s *Thing) init() {
 	}
 }
 
-// 校验实体数据, 传入实体字节数据
-func (s *Thing) ValidateEntityBytes(bs []byte) error {
-	var thingEntity ThingEntity
-	err := json.Unmarshal(bs, &thingEntity)
-	if err != nil {
-		return err
-	}
-	return s.ValidateEntity(&thingEntity)
-}
-
-// 校验实体数据 传入为结构体
-func (s *Thing) ValidateEntity(thingEntity *ThingEntity) error {
-
-	var err error
-	if thingEntity == nil {
-		return fmt.Errorf("thingEntity is nil")
-	}
-
-	method, err := NewThingMethod(thingEntity.Method)
-	if err != nil {
-		return err
-	}
-	if method.IsService() {
-		err = s.ValidateService(method.Action, thingEntity.Params, thingEntity.Data)
-	} else if method.IsEvent() {
-		err = s.ValidateEvent(method.Action, thingEntity.Params)
-	} else {
-		err = fmt.Errorf("thingEntity.method(%s) no service or event", thingEntity.Method)
-	}
-	if thingEntity.Timestamp <= 0 {
-		err = fmt.Errorf("thingEntity.timestamp <=0 , invalid")
-	}
-	return err
-}
-
 func (s *Thing) ValidateSpec() error {
 	var err error
 	if s.Profile == nil {
@@ -185,32 +146,6 @@ func (s *Thing) ValidateSpec() error {
 	return nil
 }
 
-func (s *Thing) ValidateEvent(identifier string, params []byte) error {
-	s.init() // initialize
-	event, ok := s.Value.Events[identifier]
-	if !ok {
-		return fmt.Errorf("event.identifier: (%s) no found", identifier)
-	}
-	err := event.ValidateEntity(params)
-	if err != nil {
-		return fmt.Errorf("events[%s].%v", identifier, err)
-	}
-	return nil
-}
-
-func (s *Thing) ValidateService(identifier string, params, data []byte) error {
-	s.init() // initialize
-	service, ok := s.Value.Services[identifier]
-	if !ok {
-		return fmt.Errorf("service.identifier: (%s) no found", identifier)
-	}
-	err := service.ValidateEntity(params, data)
-	if err != nil {
-		return fmt.Errorf("services[%s].%v", identifier, err)
-	}
-	return nil
-}
-
 func (s *Thing) ToEntityString() string {
 	var m struct {
 		Events   []*ThingEntity `json:"events"`
@@ -225,95 +160,6 @@ func (s *Thing) ToEntityString() string {
 	}
 	bs, _ := json.MarshalIndent(m, "", "  ")
 	return string(bs)
-}
-
-func (s *Thing) RandomAll() ([]byte, error) {
-	rand.Seed(time.Now().UnixNano())
-	var m struct {
-		Events   []*EntityRequest `json:"events"`
-		Services []*EntityRequest `json:"services"`
-	}
-
-	s.init() // initialize
-	for _, v := range s.Value.Services {
-		e, err := v.Random(true)
-		if err != nil {
-			return nil, err
-		}
-		m.Services = append(m.Services, &EntityRequest{
-			ID:        e.ID,
-			Version:   e.Version,
-			Method:    e.Method,
-			Params:    e.Params,
-			Timestamp: e.Timestamp,
-		})
-	}
-	for _, v := range s.Value.Events {
-		e, err := v.Random(true)
-		if err != nil {
-			return nil, err
-		}
-		m.Events = append(m.Events, &EntityRequest{
-			ID:        e.ID,
-			Version:   e.Version,
-			Method:    e.Method,
-			Params:    e.Params,
-			Timestamp: e.Timestamp,
-		})
-	}
-	bs, err := json.MarshalIndent(m, "", "  ")
-	return bs, err
-}
-
-func (s *Thing) Random(method string, generateAllProperty bool) ([]byte, error) {
-	var entity *ThingEntity
-	rand.Seed(time.Now().UnixNano())
-	s.init() // initialize
-	tmethod, err := NewThingMethod(method)
-	if err != nil {
-		return nil, fmt.Errorf("method: (%s) no found", method)
-	}
-	if tmethod.IsService() {
-		tm := s.Value.Services[tmethod.Action]
-		if tm == nil {
-			return nil, fmt.Errorf("service.%s no found", tmethod.Action)
-		}
-		entity, err = tm.Random(generateAllProperty)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		tm := s.Value.Events[tmethod.Action]
-		if tm == nil {
-			return nil, fmt.Errorf("event.%s no found", tmethod.Action)
-		}
-		entity, err = tm.Random(generateAllProperty)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	bs, err := json.MarshalIndent(entity, "", "  ")
-	return bs, err
-}
-
-func (s *Thing) GenerateGoDeCodec() string {
-
-	s.init() // initialize
-	var arr []string
-	codecPrefix := strings.ReplaceAll(CodecPrefix, "CODEBLOCK", "`")
-	for _, v := range s.Value.Events {
-		prefix := "Event" + xstrings.ToCamelCase(v.Identifier)
-		if prefix == "EventPost" {
-			prefix = "EventProperty"
-		}
-		arr = append(arr, fmt.Sprintf("const %sMethod = %q ", prefix, v.Method))
-	}
-	arr = append(arr, "\n")
-	for _, v := range s.Value.Events {
-		arr = append(arr, v.GenerateGoCodec())
-	}
-	return codecPrefix + strings.Join(arr, "\n") + CodecTail
 }
 
 type Profile struct {
@@ -373,17 +219,6 @@ func (s *Event) ValidateSpec() error {
 	}
 	return nil
 }
-func (s *Event) ValidateEntity(outputData []byte) error {
-	var err error
-	s.init() // initialize
-	if outputData != nil {
-		err = validateEntityParams(s.Value.OutputData, outputData)
-		if err != nil {
-			return fmt.Errorf("outputData.%v", err)
-		}
-	}
-	return nil
-}
 
 func (s *Event) ToEntity() *ThingEntity {
 	outputData := propertyToEntityMap(s.OutputData)
@@ -404,46 +239,6 @@ func (s *Event) ToEntity() *ThingEntity {
 		Params:    outputBytes, // event 为上报, 参数到平台放outputData中
 		Method:    strings.Join(methodStrs, ", "),
 	}
-}
-
-func (s *Event) Random(generateAllProperty bool) (*ThingEntity, error) {
-	s.init() // initialize
-	inputData := make(map[string]interface{})
-	inputBytes, _ := json.Marshal(inputData)
-
-	tmethod, err := NewThingMethod(s.Method)
-	if err != nil {
-		return nil, fmt.Errorf("Event.Random, err: %v", err)
-	}
-	outputData := propertyRandomValueToMap(s.OutputData)
-	if tmethod.IsProperty && generateAllProperty == false {
-		// 随机生成属性和属性值propertyRandomAndRandomValueToMap
-		outputData = propertyRandomAndRandomValueToMap(s.OutputData)
-	}
-	outputBytes, err := json.Marshal(outputData)
-	if err != nil {
-		return nil, fmt.Errorf("Event.Random, err: %v", err)
-	}
-	return &ThingEntity{
-		ID:        fmt.Sprintf("%d", rand.Int31()),
-		Version:   "1.0",
-		Timestamp: time.Now().UnixMilli(),
-		Params:    outputBytes,
-		Data:      inputBytes,
-		Method:    s.Method,
-	}, nil
-}
-
-func (s *Event) GenerateGoCodec() string {
-	prefix := "Event" + xstrings.ToCamelCase(s.Identifier)
-	if prefix == "EventPost" {
-		prefix = ""
-	}
-	var arr []string
-	for _, v := range s.OutputData {
-		arr = append(arr, v.GenerateGoCodec(prefix))
-	}
-	return strings.Join(arr, "\n")
 }
 
 // 服务
@@ -508,24 +303,6 @@ func (s *Service) ValidateSpec() error {
 	return nil
 }
 
-func (s *Service) ValidateEntity(inputData, outputData []byte) error {
-	var err error
-	s.init() // initialize
-	if inputData != nil {
-		err = validateEntityParams(s.Value.InputData, inputData)
-		if err != nil {
-			return fmt.Errorf("inputData.%v", err)
-		}
-	}
-	if outputData != nil {
-		err = validateEntityParams(s.Value.OutputData, outputData)
-		if err != nil {
-			return fmt.Errorf("outputData.%v", err)
-		}
-	}
-	return nil
-}
-
 func (s *Service) ToEntity() *ThingEntity {
 	inputData := propertyToEntityMap(s.InputData)
 	outputData := propertyToEntityMap(s.OutputData)
@@ -548,67 +325,4 @@ func (s *Service) ToEntity() *ThingEntity {
 		Data:      outputBytes,
 		Method:    strings.Join(methodStrs, ","),
 	}
-}
-func (s *Service) Random(generateAllProperty bool) (*ThingEntity, error) {
-	s.init() // initialize
-	inputData := propertyRandomValueToMap(s.InputData)
-	outputData := propertyRandomValueToMap(s.OutputData)
-	tmethod, err := NewThingMethod(s.Method)
-	if err != nil {
-
-		return nil, fmt.Errorf("Service.Random, err: %v", err)
-	}
-	if tmethod.IsProperty && tmethod.IsSet && generateAllProperty == false {
-		// 随机生成属性和属性值propertyRandomAndRandomValueToMap
-		inputData = propertyRandomAndRandomValueToMap(s.InputData)
-	}
-	inputBytes, err := json.Marshal(inputData)
-	if err != nil {
-
-		return nil, fmt.Errorf("Service.Random, err: %v", err)
-	}
-	outputBytes, err := json.Marshal(outputData)
-	if err != nil {
-		return nil, fmt.Errorf("Service.Random, err: %v", err)
-	}
-	return &ThingEntity{
-		ID:        fmt.Sprintf("%d", rand.Int31()),
-		Version:   "1.0",
-		Timestamp: time.Now().UnixMilli(),
-		Params:    inputBytes,
-		Data:      outputBytes,
-		Method:    s.Method,
-	}, nil
-}
-
-func (s *Service) GenerateGoCodec() string {
-	return ""
-}
-
-func validateEntityParams(specData map[string]*Property, data []byte) error {
-	var err error
-	if data == nil || len(string(data)) == 0 || strings.Compare(string(data), "{}") == 0 {
-		return nil
-	}
-	if specData == nil {
-		return nil
-	}
-	paramMap := make(map[string]interface{})
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	// 使用json number
-	decoder.UseNumber()
-	if err := decoder.Decode(&paramMap); err != nil {
-		return err
-	}
-	for k, v := range paramMap {
-		param, ok := specData[k]
-		if !ok {
-			return fmt.Errorf("[%s] err:  not exist", k)
-		}
-		err = param.ValidateValue(v)
-		if err != nil {
-			return fmt.Errorf("[%s].%v", k, err)
-		}
-	}
-	return nil
 }

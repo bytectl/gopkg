@@ -6,8 +6,6 @@ import (
 	"math/rand"
 	"strings"
 	"time"
-
-	"github.com/huandu/xstrings"
 )
 
 // 属性
@@ -57,12 +55,6 @@ func (s *Property) ToEntityString() string {
 	}
 	specs = append(specs, s.DataType.ToEntityString())
 	return strings.Join(specs, ",")
-}
-
-func (s *Property) GenerateGoCodec(prefix string) string {
-	dataType := s.DataType.GenerateGoType()
-	format := `func (p Params) Set%v%v(v %v)  { p["%v"] = v } // %v`
-	return fmt.Sprintf(format, prefix, xstrings.ToCamelCase(s.Identifier), dataType, s.Identifier, s.Name)
 }
 
 func (s *Property) Random() interface{} {
