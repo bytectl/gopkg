@@ -20,13 +20,15 @@ type EventData struct {
 
 type Params map[string]interface{}
 
-const ({{range .Value.Events}}
-	Event{{ camelcase .ConstName }} = "{{.Method}}"{{end}}
+const ({{range $index, $element := .Value.Events }}
+	Event{{ camelcase $element.ConstName }} = "{{$element.Method}}" // {{$element.Name}}事件{{end}} 
 )
 
-{{- range .Value.Events}}
-{{$prefixName := camelcase .ParamPrefixName}}
-{{- range .OutputData}}func (p Params) Set{{ $prefixName }}{{- camelcase .Identifier }}(v {{.DataType.GenerateGoType -}}) { p["{{- .Identifier -}}"] = v } // {{.Name}}
+{{- range $index, $element := .Value.Events }}
+{{- if $element.OutputData }}
+// Event{{ camelcase $element.ConstName }} {{$element.Name}}事件参数{{ end }}
+{{$prefixName := camelcase $element.ParamPrefixName}}
+{{- range $element.OutputData}}func (p Params) Set{{ $prefixName }}{{- camelcase .Identifier }}(v {{.DataType.GenerateGoType -}}) { p["{{- .Identifier -}}"] = v } // {{.Name}}
 {{end -}}{{end -}}
 
 // 解码	
@@ -36,6 +38,8 @@ func Decode(payload, metadata []byte) ([]byte, error) {
 	var decodeData struct {
 		//TODO: please change to you decode fields
 		{{- range .Value.Events}}
+
+
 		{{$prefixName := camelcase .ParamPrefixName}}
 		{{- if not $prefixName }}
 		{{- range .OutputData}}{{- camelcase .Identifier }}  {{.DataType.GenerateGoType}} 
