@@ -21,14 +21,14 @@ type EventData struct {
 type Params map[string]interface{}
 
 const ({{range $index, $element := .Value.Events }}
-	Event{{ camelcase $element.ConstName }} = "{{$element.Method}}" // {{$element.Name}}事件{{end}} 
+	Event{{ title $element.ConstName }} = "{{$element.Method}}" // {{$element.Name}}事件{{end}} 
 )
 
 {{- range $index, $element := .Value.Events }}
 {{- if $element.OutputData }}
-// Event{{ camelcase $element.ConstName }} {{$element.Name}}事件参数{{ end }}
-{{$prefixName := camelcase $element.ParamPrefixName}}
-{{- range $element.OutputData}}func (p Params) Set{{ $prefixName }}{{- camelcase .Identifier }}(v {{.DataType.GenerateGoType -}}) { p["{{- .Identifier -}}"] = v } // {{.Name}}
+// Event{{ title $element.ConstName }} {{$element.Name}}事件参数{{ end }}
+{{$prefixName := title $element.ParamPrefixName}}
+{{- range $element.OutputData}}func (p Params) Set{{ $prefixName }}{{- title .Identifier }}(v {{.DataType.GenerateGoType -}}) { p["{{- .Identifier -}}"] = v } // {{.Name}}
 {{end -}}{{end -}}
 
 // 解码	
@@ -40,9 +40,9 @@ func Decode(payload, metadata []byte) ([]byte, error) {
 		{{- range .Value.Events}}
 
 
-		{{$prefixName := camelcase .ParamPrefixName}}
+		{{$prefixName := title .ParamPrefixName}}
 		{{- if not $prefixName }}
-		{{- range .OutputData}}{{- camelcase .Identifier }}  {{.DataType.GenerateGoType}} 
+		{{- range .OutputData}}{{- title .Identifier }}  {{.DataType.GenerateGoType}} 
 		{{end -}}{{end -}}{{end -}}
 	}
 	if err := binary.Read(buffer, binary.BigEndian, &decodeData); err != nil {
@@ -52,9 +52,9 @@ func Decode(payload, metadata []byte) ([]byte, error) {
 	params := make(Params)
 	//TODO: please set your params
 	{{- range .Value.Events}}
-	{{$prefixName := camelcase .ParamPrefixName}}
+	{{$prefixName := title .ParamPrefixName}}
 	{{- if not $prefixName }}
-	{{- range .OutputData}}params.Set{{- camelcase .Identifier }}({{- camelcase .Identifier }} ) // {{.Name}}
+	{{- range .OutputData}}params.Set{{- title .Identifier }}({{- title .Identifier }} ) // {{.Name}}
 	{{end -}}{{end -}}{{end -}}
 	//TODO: please make up your other event params
 
