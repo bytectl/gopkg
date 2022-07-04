@@ -33,13 +33,13 @@ func Register{{.ServiceType}}MQTTServer(r *mqtt.Router, srv {{.ServiceType}}MQTT
 {{range .Methods}}
 func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) func(mqtt.Context)  {
 	return func(ctx mqtt.Context)  {
+		glog.Debugf("receive mqtt topic:%v, body: %v", ctx.Message().Topic(), string(ctx.Message().Payload()))
 		in :=&{{.Request}}{}
 		err := jsonCodec.Unmarshal(ctx.Message().Payload(), in)
 		if err != nil {
 			glog.Error("message error:", err)
 			return
 		}
-		glog.Debugf("receive mqtt topic:%v, body: %v", ctx.Message().Topic(), string(ctx.Message().Payload()))
 		vars := mqtt.ParamsFromContext(ctx)
 		err = formCodec.Unmarshal([]byte(vars.Encode()), in)
 		if err != nil {
