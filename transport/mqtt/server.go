@@ -193,6 +193,9 @@ func NewServer(opts ...ServerOption) *Server {
 	for _, o := range opts {
 		o(srv)
 	}
+	srv.router.NotFoundHandle = func(c pmqtt.Client, msg pmqtt.Message) {
+		srv.log.Error("not found handler topic: ", msg.Topic())
+	}
 	srv.mqttClient = pmqtt.NewClient(srv.clientOption)
 	return srv
 }
