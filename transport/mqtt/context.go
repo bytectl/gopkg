@@ -3,6 +3,7 @@ package mqtt
 import (
 	"bytes"
 	"context"
+	"net/url"
 	"time"
 
 	"github.com/bytectl/gopkg/transport/mqtt/mux"
@@ -18,7 +19,7 @@ type Context interface {
 	context.Context
 	Client() pmqtt.Client
 	Message() pmqtt.Message
-	Reset(pmqtt.Client, pmqtt.Message)
+	Reset(context.Context, pmqtt.Client, pmqtt.Message, *mux.Params)
 	Middleware(middleware.Handler) middleware.Handler
 	Bind(v interface{}) error
 	BindVars(v interface{}) error
@@ -31,6 +32,7 @@ type wrapper struct {
 	ctx    context.Context
 	client pmqtt.Client
 	msg    pmqtt.Message
+	ps     *mux.Params
 }
 
 func (c *wrapper) Client() pmqtt.Client   { return c.client }
@@ -38,9 +40,11 @@ func (c *wrapper) Message() pmqtt.Message { return c.msg }
 func (c *wrapper) Middleware(h middleware.Handler) middleware.Handler {
 	return middleware.Chain(c.router.srv.ms...)(h)
 }
-func (c *wrapper) Reset(client pmqtt.Client, msg pmqtt.Message) {
+func (c *wrapper) Reset(ctx context.Context, client pmqtt.Client, msg pmqtt.Message, ps *mux.Params) {
+	c.ctx = ctx
 	c.client = client
 	c.msg = msg
+	c.ps = ps
 }
 
 func (c *wrapper) Deadline() (time.Time, bool) {
@@ -71,10 +75,21 @@ func (c *wrapper) Value(key interface{}) interface{} {
 	return c.ctx.Value(key)
 }
 
+type paramsKey struct{}
+
+var pKey = paramsKey{}
+
 func (c *wrapper) Bind(v interface{}) error { return c.router.srv.dec(c.Message().Payload(), v) }
 
 func (c *wrapper) BindVars(v interface{}) error {
-	return binding.BindQuery(mux.ParamsFromContext(c), v)
+	varValues := make(url.Values)
+	for _, p := range *c.ps {
+		if p.Key == "" {
+			continue
+		}
+		varValues.Add(p.Key, p.Value)
+	}
+	return binding.BindQuery(varValues, v)
 }
 
 func (c *wrapper) Encode(v interface{}) ([]byte, error) {

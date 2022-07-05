@@ -160,20 +160,12 @@ func Middleware(m ...middleware.Middleware) ServerOption {
 	}
 }
 
-// Filter with MQTT middleware option.
-func Filter(filters ...FilterFunc) ServerOption {
-	return func(o *Server) {
-		o.filters = filters
-	}
-}
-
 type Server struct {
 	log               *log.Helper
 	clientOption      *pmqtt.ClientOptions
 	mqttClient        pmqtt.Client
 	disconnectQuiesce uint
 	router            *mux.Router
-	filters           []FilterFunc
 	ms                []middleware.Middleware
 	dec               DecodeRequestFunc
 	enc               EncodeResponseFunc
@@ -193,7 +185,7 @@ func NewServer(opts ...ServerOption) *Server {
 	for _, o := range opts {
 		o(srv)
 	}
-	srv.router.NotFoundHandle = func(c pmqtt.Client, msg pmqtt.Message) {
+	srv.router.NotFoundHandle = func(c pmqtt.Client, msg pmqtt.Message, ps *mux.Params) {
 		srv.log.Error("not found handler topic: ", msg.Topic())
 	}
 	srv.mqttClient = pmqtt.NewClient(srv.clientOption)
@@ -219,8 +211,8 @@ func (o *Server) Stop(ctx context.Context) error {
 }
 
 // Route registers an MQTT router.
-func (s *Server) Route(filters ...FilterFunc) *Router {
-	return newRouter(s, filters...)
+func (s *Server) Route() *Router {
+	return newRouter(s)
 }
 
 // Subscribe to topic

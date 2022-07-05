@@ -31,8 +31,6 @@
 package mux
 
 import (
-	"context"
-	"net/url"
 	"strings"
 	"sync"
 
@@ -42,12 +40,7 @@ import (
 // Handle is a function that can be registered to a route to handle MQTT
 // requests. Like MQTT.HandlerFunc, but has a third parameter for the values of
 // wildcards (topic variables).
-type HandlerFunc func(c mqtt.Client, msg mqtt.Message)
-
-// ServeMQTT calls f(w, r).
-func (f HandlerFunc) ServeMQTT(c mqtt.Client, msg mqtt.Message) {
-	f(c, msg)
-}
+type HandlerFunc func(c mqtt.Client, msg mqtt.Message, ps *Params)
 
 // Param is a single URL parameter, consisting of a key and a value.
 type Param struct {
@@ -69,18 +62,6 @@ func (ps Params) ByName(name string) string {
 		}
 	}
 	return ""
-}
-
-type paramsKey struct{}
-
-// ParamsKey is the request context key under which URL params are stored.
-var ParamsKey = paramsKey{}
-
-// ParamsFromContext pulls the URL parameters from a request context,
-// or returns nil if none are present.
-func ParamsFromContext(ctx context.Context) url.Values {
-	p, _ := ctx.Value(ParamsKey).(url.Values)
-	return p
 }
 
 // Router is a http.Handler which can be used to dispatch requests to different
@@ -155,30 +136,23 @@ func (r *Router) ServeMQTT(c mqtt.Client, msg mqtt.Message) {
 	}
 	if r.root == nil {
 		if r.NotFoundHandle != nil {
-			r.NotFoundHandle(c, msg)
+			r.NotFoundHandle(c, msg, nil)
 		}
 		return
 	}
 	handle, ps, _ := r.root.getValue(topic, r.getParams)
 	if handle == nil {
 		if r.NotFoundHandle != nil {
-			r.NotFoundHandle(c, msg)
+			r.NotFoundHandle(c, msg, nil)
 		}
 		return
 	}
 
 	if ps != nil {
-		varValues := make(url.Values)
-		for _, p := range *ps {
-			if p.Key == "" {
-				continue
-			}
-			varValues.Add(p.Key, p.Value)
-		}
-		handle(c, msg)
+		handle(c, msg, ps)
 		// note: handle must before putParams
 		r.putParams(ps)
 	} else {
-		handle(c, msg)
+		handle(c, msg, nil)
 	}
 }

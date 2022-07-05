@@ -13,33 +13,30 @@ type HandlerFunc func(Context)
 
 // Router is an MQTT router.
 type Router struct {
-	pool    sync.Pool
-	srv     *Server
-	filters []FilterFunc
+	pool sync.Pool
+	srv  *Server
 }
 
-func newRouter(srv *Server, filters ...FilterFunc) *Router {
+func newRouter(srv *Server) *Router {
 	r := &Router{
-		srv:     srv,
-		filters: filters,
+		srv: srv,
 	}
 	r.pool.New = func() interface{} {
-		return &wrapper{router: r, ctx: context.Background()}
+		return &wrapper{router: r}
 	}
 	return r
 }
 
 // Handle registers a new route with a matcher for the Topic.
-func (r *Router) Handle(topic string, h HandlerFunc, filters ...FilterFunc) {
+func (r *Router) Handle(topic string, h HandlerFunc) {
 
-	next := Handler(mux.HandlerFunc(func(c mqtt.Client, msg mqtt.Message) {
+	next := mux.HandlerFunc(func(c mqtt.Client, msg mqtt.Message, ps *mux.Params) {
 		ctx := r.pool.Get().(Context)
-		ctx.Reset(c, msg)
+		ctx.Reset(context.Background(), c, msg, ps)
 		h(ctx)
-		ctx.Reset(nil, nil)
+		ctx.Reset(nil, nil, nil, nil)
 		r.pool.Put(ctx)
-	}))
-	next = FilterChain(filters...)(next)
-	next = FilterChain(r.filters...)(next)
-	r.srv.router.Handle(topic, next.ServeMQTT)
+	})
+
+	r.srv.router.Handle(topic, next)
 }
