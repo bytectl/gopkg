@@ -22,7 +22,7 @@ type Context interface {
 	Middleware(middleware.Handler) middleware.Handler
 	Bind(v interface{}) error
 	BindVars(v interface{}) error
-	Encode(v interface{}) []byte
+	Encode(v interface{}) ([]byte, error)
 	EncodeErr(err error) []byte
 }
 
@@ -77,10 +77,10 @@ func (c *wrapper) BindVars(v interface{}) error {
 	return binding.BindQuery(mux.ParamsFromContext(c), v)
 }
 
-func (c *wrapper) Encode(v interface{}) []byte {
+func (c *wrapper) Encode(v interface{}) ([]byte, error) {
 	var buf bytes.Buffer
-	c.router.srv.enc(&buf, v)
-	return buf.Bytes()
+	err := c.router.srv.enc(&buf, v)
+	return buf.Bytes(), err
 }
 func (c *wrapper) EncodeErr(err error) []byte {
 	var buf bytes.Buffer

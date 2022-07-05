@@ -18,13 +18,14 @@ func SetLogger(logger log.Logger){
 	glog = log.NewHelper(logger)
 }
 
-func Subscribe{{.ServiceType}}(c paho_mqtt_golang.Client, r *mqtt.Router) {
+func Subscribe{{.ServiceType}}(c paho_mqtt_golang.Client, m *mqtt.MQTTSubscribe) {
 	{{- range .Methods}}
-	r.Subscribe(c,"{{.Path}}",0)
+	m.Subscribe(c,"{{.Path}}",0)
 	{{- end}}
 }
 
-func Register{{.ServiceType}}MQTTServer(r *mqtt.Router, srv {{.ServiceType}}MQTTServer) {
+func Register{{.ServiceType}}MQTTServer(s *mqtt.Server, srv {{.ServiceType}}MQTTServer) {
+	r := s.Route()
 	{{- range .MethodSets}}
 	r.Handle("{{.Path}}", _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv))
 	{{- end}}
@@ -35,13 +36,12 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 	return func(ctx mqtt.Context)  {
 		glog.Debugf("receive mqtt topic:%v, body: %v", ctx.Message().Topic(), string(ctx.Message().Payload()))
 		in :=&{{.Request}}{}
-		err := jsonCodec.Unmarshal(ctx.Message().Payload(), in)
+		err := ctx.Bind(in)
 		if err != nil {
 			glog.Error("message error:", err)
 			return
 		}
-		vars := mqtt.ParamsFromContext(ctx)
-		err = formCodec.Unmarshal([]byte(vars.Encode()), in)
+		err = ctx.BindVars(in)
 		if err != nil {
 			glog.Error("var Params error:", err)
 		}
@@ -58,7 +58,7 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 		if reply == nil {
 			return
 		}
-		bs, err := jsonCodec.Marshal(reply)
+		bs, err := ctx.Encode(reply)
 		if err != nil {
 			glog.Errorf("topic:%v, err: %v", ctx.Message().Topic(), err)
 			return
