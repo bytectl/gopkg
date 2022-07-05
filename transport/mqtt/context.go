@@ -21,6 +21,7 @@ type Context interface {
 	Reset(pmqtt.Client, pmqtt.Message)
 	Middleware(middleware.Handler) middleware.Handler
 	Bind(v interface{}) error
+	BindVars(v interface{}) error
 	Encode(v interface{}) []byte
 	EncodeErr(err error) []byte
 }
