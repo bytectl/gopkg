@@ -49,9 +49,19 @@ func DefaultResponseEncoder(w *bytes.Buffer, v interface{}) error {
 
 // DefaultErrorEncoder encodes the error to the mqtt response.
 func DefaultErrorEncoder(w *bytes.Buffer, err error) {
+	var reply struct {
+		Id      string `json:"id"`
+		Code    int32  `json:"code"`
+		Reason  string `json:"reason,omitempty"`
+		Message string `json:"message"`
+	}
 	se := errors.FromError(err)
+	reply.Id = se.Metadata["id"]
+	reply.Code = se.Code
+	reply.Message = se.Message
+	reply.Reason = se.Reason
 	codec := encoding.GetCodec(json.Name)
-	body, err := codec.Marshal(se)
+	body, err := codec.Marshal(reply)
 	if err != nil {
 		errBody := fmt.Sprintf("%s", err)
 		w.Write([]byte(errBody))

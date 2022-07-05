@@ -45,18 +45,15 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 		if err != nil {
 			glog.Error("var Params error:", err)
 		}
+		glog.Debugf("receive mqtt topic:%v, in: %+v", ctx.Message().Topic(), in)
 		err = in.Validate()
 		if err != nil {
 			glog.Error("validate error:", err)
 			return
 		}
 		glog.Debugf("receive mqtt request:%+v",in)
-		reply, err := srv.{{.Name}}(ctx, in)
-		if reply == nil && err == nil {
-			glog.Debugf(" mqtt topic:%v, no need reply", ctx.Message().Topic())
-			return
-		}
 		var bs []byte
+		reply, err := srv.{{.Name}}(ctx, in)
 		if err != nil {
 			glog.Error("{{.Name}} error:", err)
 			bs = ctx.EncodeErr(err)
@@ -67,6 +64,10 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 				bs = ctx.EncodeErr(err)
 				return
 			}
+		}
+		if reply == nil {
+			glog.Debugf(" mqtt topic:%v, no need reply", ctx.Message().Topic())
+			return
 		}
 		replyTopic := strings.TrimPrefix(ctx.Message().Topic(),ServerTopicPrefix) 
 		replyTopic = fmt.Sprintf("%s%s_reply", DeviceTopicPrefix, replyTopic)
