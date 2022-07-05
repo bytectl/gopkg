@@ -9,7 +9,7 @@ import (
 )
 
 // HandlerFunc defines a function to serve MQTT requests.
-type HandlerFunc func(Context) error
+type HandlerFunc func(Context)
 
 // Router is an MQTT router.
 type Router struct {
