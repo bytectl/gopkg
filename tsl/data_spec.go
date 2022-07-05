@@ -37,6 +37,7 @@ type DataType struct {
 // 数据类型注册表
 var TypeSpecRegister = map[string]func([]byte) (Validator, error){
 	"int":    NewDigitalSpec,
+	"long":   NewDigitalSpec,
 	"float":  NewFloatSpec,
 	"double": NewFloatSpec,
 	"text":   NewTextSpec,
@@ -124,6 +125,8 @@ func (s *DataType) GenerateGoType() string {
 	switch s.Type {
 	case "int":
 		return "int"
+	case "long":
+		return "int64"
 	case "float":
 		return "float64"
 	case "double":
@@ -155,7 +158,10 @@ func (s *DateSpec) ValidateSpec() error {
 	return nil
 }
 func (s *DateSpec) ValidateValue(value interface{}) error {
-	fmt.Println("note: empty validateValue.....")
+	_, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("(date).value err: %v is not string", value)
+	}
 	return nil
 }
 func (s *DateSpec) ToEntityString() string {
@@ -173,9 +179,9 @@ type DigitalSpec struct {
 	Unit     string
 	UnitName string
 	Value    struct {
-		Max  int
-		Min  int
-		Step int
+		Max  int64
+		Min  int64
+		Step uint64
 	}
 }
 
@@ -200,16 +206,16 @@ func NewDigitalSpec(bs []byte) (Validator, error) {
 			return nil, fmt.Errorf("(digital).step err: %v", err)
 		}
 	}
-	spec.Value.Max = int(max)
-	spec.Value.Min = int(min)
-	spec.Value.Step = int(step)
+	spec.Value.Max = max
+	spec.Value.Min = min
+	spec.Value.Step = step
 	return spec, nil
 }
 func (s *DigitalSpec) ValidateSpec() error {
 	if s.Value.Min > s.Value.Max {
 		return fmt.Errorf("(float).min err: min is larger than max")
 	}
-	if s.Value.Step > s.Value.Max-s.Value.Min {
+	if s.Value.Step != 0 && s.Value.Step > uint64(s.Value.Max-s.Value.Min) {
 		return fmt.Errorf("(digital).step err: step is too large")
 	}
 	return nil
@@ -221,10 +227,9 @@ func (s *DigitalSpec) ValidateValue(value interface{}) error {
 	}
 	int64Value, err := vNumber.Int64()
 	if err != nil {
-		return fmt.Errorf("(float).value err: %v", err)
+		return fmt.Errorf("(digital).value err: %v", err)
 	}
-	intValue := int(int64Value)
-	if intValue < s.Value.Min || intValue > s.Value.Max {
+	if int64Value < s.Value.Min || int64Value > s.Value.Max {
 		return fmt.Errorf("(digital).value err: value is out of range [%v, %v]", s.Value.Min, s.Value.Max)
 	}
 	return nil
@@ -236,7 +241,7 @@ func (s *DigitalSpec) ToEntityString() string {
 }
 
 func (s *DigitalSpec) Random() interface{} {
-	return rand.Intn(s.Value.Max-s.Value.Min+1) + s.Value.Min
+	return int64(rand.Intn(int(s.Value.Max-s.Value.Min+1))) + s.Value.Min
 }
 
 // 数值类型

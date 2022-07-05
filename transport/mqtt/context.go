@@ -1,10 +1,14 @@
 package mqtt
 
 import (
+	"bytes"
 	"context"
 	"time"
 
+	"github.com/bytectl/gopkg/transport/mqtt/mux"
 	pmqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/transport/http/binding"
 )
 
 var _ Context = (*wrapper)(nil)
@@ -15,13 +19,14 @@ type Context interface {
 	Client() pmqtt.Client
 	Message() pmqtt.Message
 	Reset(pmqtt.Client, pmqtt.Message)
-}
-
-func WithContext(ctx context.Context) Context {
-	return &wrapper{ctx: ctx}
+	Middleware(middleware.Handler) middleware.Handler
+	Bind(v interface{}) error
+	Encode(v interface{}) []byte
+	EncodeErr(err error) []byte
 }
 
 type wrapper struct {
+	router *Router
 	ctx    context.Context
 	client pmqtt.Client
 	msg    pmqtt.Message
@@ -29,7 +34,9 @@ type wrapper struct {
 
 func (c *wrapper) Client() pmqtt.Client   { return c.client }
 func (c *wrapper) Message() pmqtt.Message { return c.msg }
-
+func (c *wrapper) Middleware(h middleware.Handler) middleware.Handler {
+	return middleware.Chain(c.router.srv.ms...)(h)
+}
 func (c *wrapper) Reset(client pmqtt.Client, msg pmqtt.Message) {
 	c.client = client
 	c.msg = msg
@@ -61,4 +68,21 @@ func (c *wrapper) Value(key interface{}) interface{} {
 		return nil
 	}
 	return c.ctx.Value(key)
+}
+
+func (c *wrapper) Bind(v interface{}) error { return c.router.srv.dec(c.Message().Payload(), v) }
+
+func (c *wrapper) BindVars(v interface{}) error {
+	return binding.BindQuery(mux.ParamsFromContext(c), v)
+}
+
+func (c *wrapper) Encode(v interface{}) []byte {
+	var buf bytes.Buffer
+	c.router.srv.enc(&buf, v)
+	return buf.Bytes()
+}
+func (c *wrapper) EncodeErr(err error) []byte {
+	var buf bytes.Buffer
+	c.router.srv.ene(&buf, err)
+	return buf.Bytes()
 }
