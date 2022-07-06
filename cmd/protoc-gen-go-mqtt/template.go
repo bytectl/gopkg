@@ -19,8 +19,8 @@ func SetLogger(logger log.Logger){
 }
 
 func Subscribe{{.ServiceType}}(c paho_mqtt_golang.Client, m *mqtt.MQTTSubscribe) {
-	{{- range .Methods}}
-	m.Subscribe(c,"{{.Path}}",0)
+	{{- range .SubscribeMethods}}
+	{{if .Path }}m.Subscribe(c,"{{.Path}}",0){{end}}
 	{{- end}}
 }
 
@@ -31,7 +31,7 @@ func Register{{.ServiceType}}MQTTServer(s *mqtt.Server, srv {{.ServiceType}}MQTT
 	{{- end}}
 }
 
-{{range .Methods}}
+{{range .MethodSets}}
 func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) func(mqtt.Context)  {
 	return func(ctx mqtt.Context)  {
 		glog.Debugf("receive mqtt topic:%v, body: %v", ctx.Message().Topic(), string(ctx.Message().Payload()))
@@ -80,11 +80,12 @@ func _{{$svrType}}_{{.Name}}{{.Num}}_MQTT_Handler(srv {{$svrType}}MQTTServer) fu
 `
 
 type serviceDesc struct {
-	ServiceType string // Greeter
-	ServiceName string // helloworld.Greeter
-	Metadata    string // api/helloworld/helloworld.proto
-	Methods     []*methodDesc
-	MethodSets  map[string]*methodDesc
+	ServiceType      string // Greeter
+	ServiceName      string // helloworld.Greeter
+	Metadata         string // api/helloworld/helloworld.proto
+	Methods          []*methodDesc
+	MethodSets       map[string]*methodDesc
+	SubscribeMethods []*methodDesc // 用于订阅topic
 }
 
 type methodDesc struct {

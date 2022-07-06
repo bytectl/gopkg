@@ -15,11 +15,11 @@ import (
 )
 
 const (
-	contextPackage  = protogen.GoImportPath("context")
-	mqttPackage     = protogen.GoImportPath("github.com/bytectl/gopkg/transport/mqtt")
-	encodingPackage = protogen.GoImportPath("github.com/go-kratos/kratos/v2/encoding")
-	jsonPackage     = protogen.GoImportPath("github.com/go-kratos/kratos/v2/encoding/json")
-	formPackage     = protogen.GoImportPath("github.com/go-kratos/kratos/v2/encoding/form")
+	contextPackage = protogen.GoImportPath("context")
+	mqttPackage    = protogen.GoImportPath("github.com/bytectl/gopkg/transport/mqtt")
+	// encodingPackage = protogen.GoImportPath("github.com/go-kratos/kratos/v2/encoding")
+	// jsonPackage     = protogen.GoImportPath("github.com/go-kratos/kratos/v2/encoding/json")
+	// formPackage     = protogen.GoImportPath("github.com/go-kratos/kratos/v2/encoding/form")
 	logPackage      = protogen.GoImportPath("github.com/go-kratos/kratos/v2/log")
 	pahoMQttPackage = protogen.GoImportPath("github.com/eclipse/paho.mqtt.golang")
 	stringsPackage  = protogen.GoImportPath("strings")
@@ -51,18 +51,18 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 		return
 	}
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "mqtt", GoImportPath: mqttPackage})
-	g.QualifiedGoIdent(protogen.GoIdent{GoName: "encoding", GoImportPath: encodingPackage})
+	// g.QualifiedGoIdent(protogen.GoIdent{GoName: "encoding", GoImportPath: encodingPackage})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "log", GoImportPath: logPackage})
-	g.QualifiedGoIdent(protogen.GoIdent{GoName: "json", GoImportPath: jsonPackage})
-	g.QualifiedGoIdent(protogen.GoIdent{GoName: "form", GoImportPath: formPackage})
+	// g.QualifiedGoIdent(protogen.GoIdent{GoName: "json", GoImportPath: jsonPackage})
+	// g.QualifiedGoIdent(protogen.GoIdent{GoName: "form", GoImportPath: formPackage})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "strings", GoImportPath: stringsPackage})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "fmt", GoImportPath: fmtPackage})
 	g.QualifiedGoIdent(protogen.GoIdent{GoName: "paho", GoImportPath: pahoMQttPackage})
 	g.P("// This is a compile-time assertion to ensure that this generated file")
 	g.P("// is compatible with the kratos package it is being compiled against.")
 	g.P("var _ = new(", contextPackage.Ident("Context"), ")")
-	g.P("var jsonCodec =", encodingPackage.Ident("GetCodec(json.Name)"))
-	g.P("var formCodec =", encodingPackage.Ident("GetCodec(form.Name)"))
+	// g.P("var jsonCodec =", encodingPackage.Ident("GetCodec(json.Name)"))
+	// g.P("var formCodec =", encodingPackage.Ident("GetCodec(form.Name)"))
 	g.P("var glog =", logPackage.Ident("NewHelper(log.DefaultLogger)"))
 
 	g.P("const ServerTopicPrefix = \"/sys\"")
@@ -90,13 +90,23 @@ func genService(gen *protogen.Plugin, file *protogen.File, g *protogen.Generated
 		}
 		rule, ok := proto.GetExtension(method.Desc.Options(), annotations.E_Http).(*annotations.HttpRule)
 		if rule != nil && ok {
+
 			for _, bind := range rule.AdditionalBindings {
-				sd.Methods = append(sd.Methods, buildHTTPRule(g, method, bind))
+				m := buildHTTPRule(g, method, bind)
+				sd.Methods = append(sd.Methods, m)
+				sd.SubscribeMethods = append(sd.SubscribeMethods, m)
 			}
-			sd.Methods = append(sd.Methods, buildHTTPRule(g, method, rule))
+			m := buildHTTPRule(g, method, rule)
+			sd.Methods = append(sd.Methods, m)
+			// AdditionalBindings 中没有指定, 则使用rule中的方法名
+			if len(rule.AdditionalBindings) == 0 {
+				sd.SubscribeMethods = append(sd.SubscribeMethods, m)
+			}
 		} else if !omitempty {
 			path := fmt.Sprintf("/%s/%s", service.Desc.FullName(), method.Desc.Name())
-			sd.Methods = append(sd.Methods, buildMethodDesc(g, method, "POST", path))
+			m := buildMethodDesc(g, method, "POST", path)
+			sd.Methods = append(sd.Methods, m)
+			sd.SubscribeMethods = append(sd.SubscribeMethods, m)
 		}
 	}
 	if len(sd.Methods) != 0 {
