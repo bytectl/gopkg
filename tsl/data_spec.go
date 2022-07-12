@@ -148,6 +148,38 @@ func (s *DataType) GenerateGoType() string {
 	}
 }
 
+// 默认值
+func (s *DataType) DefaultValueString() string {
+	err := s.init() // 初始化
+	if err != nil {
+		fmt.Printf("GenerateGoType:%v", err)
+		return "nil"
+	}
+	switch s.Type {
+	case "int":
+		return "0"
+	case "long":
+		return "0"
+	case "float":
+		return "0.0"
+	case "double":
+		return "0.0"
+	case "text":
+		return `""`
+	case "enum":
+		return "0"
+	case "bool":
+		return "false"
+	case "array":
+		return "nil"
+	case "struct":
+		return "nil"
+	case "date":
+		return "0"
+	}
+	return "nil"
+}
+
 type DateSpec struct{}
 
 func NewDateSpec(bs []byte) (Validator, error) {

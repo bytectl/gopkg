@@ -21,7 +21,9 @@ type EventData struct {
 type Params map[string]interface{}
 
 const ({{range $index, $element := .Value.Events }}
-    Event{{ title $element.ConstName }} = "{{$element.Method}}" // {{$element.Name}}事件{{end}} 
+    Event{{ title $element.ConstName }} = "{{$element.Method}}" // {{$element.Name}}事件{{end}}
+    {{range $index, $element := .Value.Services }}
+    Service{{ title $element.Identifier }} = "{{$element.Method}}" // {{$element.Name}}服务{{end}}
 )
 
 {{- range $index, $element := .Value.Events }}
@@ -29,6 +31,20 @@ const ({{range $index, $element := .Value.Events }}
 // Event{{ title $element.ConstName }} {{$element.Name}}事件参数{{ end }}
 {{$prefixName := title $element.ParamPrefixName}}
 {{- range $element.OutputData}}func (p Params) Set{{ $prefixName }}{{- title .Identifier }}(v {{.DataType.GenerateGoType -}}) { p["{{- .Identifier -}}"] = v } // {{.Name}}
+{{end -}}{{end -}}
+
+{{- range $index, $element := .Value.Services }}
+{{- if $element.InputData }}
+// Service{{ title $element.Identifier }} 获取{{$element.Name}}服务参数{{ end }}
+{{$prefixName := title $element.Identifier}}
+{{- range $element.InputData}}// {{.Name}}
+func (p Params) Get{{ $prefixName }}{{- title .Identifier }}() {{.DataType.GenerateGoType -}} { 
+    v := p["{{- .Identifier -}}"]
+    if v == nil { 
+        v = {{ .DataType.DefaultValueString }}
+    }
+    return v.({{.DataType.GenerateGoType}})  
+} 
 {{end -}}{{end -}}
 
 // 解码    
@@ -54,7 +70,7 @@ func Decode(payload, metadata []byte) ([]byte, error) {
     {{- range .Value.Events}}
     {{$prefixName := title .ParamPrefixName}}
     {{- if not $prefixName }}
-    {{- range .OutputData}}params.Set{{- title .Identifier }}({{- title .Identifier }} ) // {{.Name}}
+    {{- range .OutputData}}params.Set{{- title .Identifier -}}(decodeData.{{- title .Identifier -}}) // {{.Name}}
     {{end -}}{{end -}}{{end -}}
     //TODO: please make up your other event params
 
@@ -63,7 +79,7 @@ func Decode(payload, metadata []byte) ([]byte, error) {
     {
     Params: params,
     //TODO: please change to you need event method
-    Method: EventPropertyMethod,
+    Method: EventProperty,
     },
     },
     }
@@ -72,7 +88,20 @@ func Decode(payload, metadata []byte) ([]byte, error) {
 
 // Encode 编码
 func Encode(data, metadata []byte) ([]byte, error) {
-    return nil, fmt.Errorf("not implement")
+	var (
+		service Event
+		m       map[string]interface{}
+	)
+	err := json.Unmarshal(data, &service)
+	if err != nil {
+		return nil, err
+	}
+	switch service.Method {
+	default:
+		return nil, fmt.Errorf("unknown service: %v", service.Method)
+	}
+	bs, _ := json.Marshal(m)
+	return bs, nil
 }
 
 `
