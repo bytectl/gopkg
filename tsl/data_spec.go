@@ -134,7 +134,7 @@ func (s *DataType) GenerateGoType() string {
 	case "text":
 		return "string"
 	case "enum":
-		return "string"
+		return "int"
 	case "bool":
 		return "bool"
 	case "array":
