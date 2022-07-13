@@ -136,7 +136,7 @@ func (s *DataType) GenerateGoType() string {
 	case "enum":
 		return "int"
 	case "bool":
-		return "bool"
+		return "int8"
 	case "array":
 		return "[]interface{}"
 	case "struct":
@@ -169,7 +169,7 @@ func (s *DataType) DefaultValueString() string {
 	case "enum":
 		return "0"
 	case "bool":
-		return "false"
+		return "0"
 	case "array":
 		return "nil"
 	case "struct":
