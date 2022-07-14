@@ -1,25 +1,31 @@
 package mqtt
 
 import (
-	"bytes"
 	"fmt"
+	"strings"
 
+	pmqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-kratos/kratos/v2/encoding"
 	"github.com/go-kratos/kratos/v2/encoding/json"
 	"github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/log"
 )
 
 // SupportPackageIsVersion1 These constants should not be referenced from any other code.
 const SupportPackageIsVersion1 = true
+const (
+	ServerTopicPrefix = "/sys"
+	DeviceTopicPrefix = "/device"
+)
 
 // DecodeRequestFunc is decode request func.
 type DecodeRequestFunc func([]byte, interface{}) error
 
 // EncodeResponseFunc is encode response func.
-type EncodeResponseFunc func(*bytes.Buffer, interface{}) error
+type EncodeResponseFunc func(c pmqtt.Client, topic string, v interface{}) error
 
 // EncodeErrorFunc is encode error func.
-type EncodeErrorFunc func(*bytes.Buffer, error)
+type EncodeErrorFunc func(c pmqtt.Client, topic string, err error)
 
 // DefaultRequestDecoder decodes the request body to object.
 func DefaultRequestDecoder(data []byte, v interface{}) error {
@@ -34,7 +40,7 @@ func DefaultRequestDecoder(data []byte, v interface{}) error {
 }
 
 // DefaultResponseEncoder encodes the object to the mqtt reply.
-func DefaultResponseEncoder(w *bytes.Buffer, v interface{}) error {
+func DefaultResponseEncoder(c pmqtt.Client, topic string, v interface{}) error {
 	if v == nil {
 		return nil
 	}
@@ -43,12 +49,16 @@ func DefaultResponseEncoder(w *bytes.Buffer, v interface{}) error {
 	if err != nil {
 		return err
 	}
-	w.Write(body)
+	replyTopic := makeReplyTopic(topic)
+	log.Debugf("reply mqtt topic:%v,body: %v", replyTopic, string(body))
+	if c != nil {
+		c.Publish(replyTopic, 0, false, body)
+	}
 	return nil
 }
 
 // DefaultErrorEncoder encodes the error to the mqtt response.
-func DefaultErrorEncoder(w *bytes.Buffer, err error) {
+func DefaultErrorEncoder(c pmqtt.Client, topic string, err error) {
 	var reply struct {
 		Id      string `json:"id"`
 		Code    int32  `json:"code"`
@@ -61,11 +71,22 @@ func DefaultErrorEncoder(w *bytes.Buffer, err error) {
 	reply.Message = se.Message
 	reply.Reason = se.Reason
 	codec := encoding.GetCodec(json.Name)
-	body, err := codec.Marshal(reply)
-	if err != nil {
-		errBody := fmt.Sprintf("%s", err)
-		w.Write([]byte(errBody))
-		return
+	body, _ := codec.Marshal(reply)
+	replyTopic := makeReplyTopic(topic)
+	log.Debugf("reply mqtt topic:%v,body: %v", replyTopic, string(body))
+	if c != nil {
+		c.Publish(replyTopic, 0, false, body)
 	}
-	w.Write(body)
+}
+
+func makeReplyTopic(topic string) string {
+	replyTopic := topic
+	if strings.HasPrefix(topic, ServerTopicPrefix) {
+		replyTopic = strings.TrimPrefix(topic, ServerTopicPrefix)
+		replyTopic = fmt.Sprintf("%s%s_reply", DeviceTopicPrefix, replyTopic)
+	} else if strings.HasPrefix(topic, DeviceTopicPrefix) {
+		replyTopic = strings.TrimPrefix(topic, DeviceTopicPrefix)
+		replyTopic = fmt.Sprintf("%s%s_reply", ServerTopicPrefix, replyTopic)
+	}
+	return replyTopic
 }

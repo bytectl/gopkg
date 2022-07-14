@@ -65,9 +65,6 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 	// g.P("var formCodec =", encodingPackage.Ident("GetCodec(form.Name)"))
 	g.P("var glog =", logPackage.Ident("NewHelper(log.DefaultLogger)"))
 
-	g.P("const ServerTopicPrefix = \"/sys\"")
-	g.P("const DeviceTopicPrefix = \"/device\"")
-
 	for _, service := range file.Services {
 		genService(gen, file, g, service, omitempty)
 	}

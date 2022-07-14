@@ -1,7 +1,6 @@
 package mqtt
 
 import (
-	"bytes"
 	"reflect"
 	"testing"
 
@@ -33,35 +32,25 @@ type dataWithStatusCode struct {
 func TestDefaultResponseEncoder(t *testing.T) {
 
 	v1 := &dataWithStatusCode{A: "1", B: 2}
-	w := new(bytes.Buffer)
-	err := DefaultResponseEncoder(w, v1)
+
+	err := DefaultResponseEncoder(nil, "/sys/test/error", v1)
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}
-	if w.Bytes() == nil {
-		t.Errorf("expected not nil, got %v", w.Bytes())
-	}
-	t.Logf("got %v", string(w.Bytes()))
+
 }
 
 func TestDefaultResponseEncoderWithError(t *testing.T) {
-	w := new(bytes.Buffer)
+
 	se := errors.New(511, "", "")
-	DefaultErrorEncoder(w, se)
-	if w.Bytes() == nil {
-		t.Errorf("expected not nil, got %v", w.Bytes())
-	}
-	t.Logf("got %v", string(w.Bytes()))
+	DefaultErrorEncoder(nil, "/device/test/error", se)
+
 }
 
 func TestDefaultResponseEncoderEncodeNil(t *testing.T) {
-	w := new(bytes.Buffer)
-	err := DefaultResponseEncoder(w, nil)
+
+	err := DefaultResponseEncoder(nil, "/device/test/error", nil)
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
-	}
-
-	if w.Bytes() != nil {
-		t.Errorf("expected not nil, got %v", w.Bytes())
 	}
 }
