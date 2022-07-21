@@ -346,7 +346,7 @@ func (s *FloatSpec) ToEntityString() string {
 }
 
 func (s *FloatSpec) Random() interface{} {
-	return rand.Float64()*(s.Value.Max-s.Value.Min+1) + s.Value.Min
+	return rand.Float64()*(s.Value.Max-s.Value.Min) + s.Value.Min
 }
 
 // 字符串类型
