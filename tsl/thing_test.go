@@ -79,9 +79,9 @@ func TestValidModel(t *testing.T) {
 
 func executeValidTests(t *testing.T, path string) error {
 	var test struct {
-		Model    *Thing
-		Entities []*ThingEntity
-		IsFail   bool
+		Model           *Thing         `json:"model"`
+		Entities        []*ThingEntity `json:"entities"`
+		FailedEntityIDs []string       `json:"failed_entity_ids"`
 	}
 
 	file, err := os.Open(path)
@@ -99,19 +99,14 @@ func executeValidTests(t *testing.T, path string) error {
 		t.Errorf("Error (%s)\n", err.Error())
 		return err
 	}
-	// 控制是否是失败测试
-	tLog := t.Errorf
-	if test.IsFail {
-		tLog = t.Logf
-	}
 	filename := filepath.Base(path)
 	if test.Model == nil {
-		tLog("file: %s, Expected model but got nil\n", filename)
+		t.Errorf("file: %s, Expected model but got nil\n", filename)
 		return nil
 	}
 	err = test.Model.ValidateSpec()
 	if err != nil {
-		tLog("Error (%s)\n", err.Error())
+		t.Errorf("Error (%s)\n", err.Error())
 		return nil
 	}
 	if test.Entities == nil {
@@ -121,7 +116,17 @@ func executeValidTests(t *testing.T, path string) error {
 	for _, v := range test.Entities {
 		err = test.Model.ValidateEntity(v)
 		if err != nil {
-			tLog("Error (%s)\n", err.Error())
+			errFlag := true
+			for _, id := range test.FailedEntityIDs {
+				if id == v.ID {
+					t.Logf("id: %v, want Error (%s)\n", v.ID, err.Error())
+					errFlag = false
+					break
+				}
+			}
+			if errFlag {
+				t.Errorf("id: %v, failed Error (%s)\n", v.ID, err.Error())
+			}
 		}
 	}
 	return nil

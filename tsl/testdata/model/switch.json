@@ -50,7 +50,7 @@
         "events": []
     },
     "entities": [{
-            "id": "123",
+            "id": "1",
             "version": "1.0",
             "params": {
                 "switch": 1,
@@ -61,7 +61,7 @@
             "timestamp": 152889788000
         },
         {
-            "id": "1327753510",
+            "id": "2",
             "version": "1.0",
             "params": {
                 "countDown": 963,
@@ -71,7 +71,7 @@
             "method": "thing.event.property.post",
             "timestamp": 1655358465962
         }, {
-            "id": "1383923083",
+            "id": "3",
             "version": "1.0",
             "params": {
                 "countDown": 370,
@@ -81,7 +81,7 @@
             "method": "thing.event.property.post",
             "timestamp": 1655358465962
         }, {
-            "id": "59447805",
+            "id": "4",
             "version": "1.0",
             "params": {
                 "countDown": 924,
@@ -91,7 +91,7 @@
             "method": "thing.event.property.post",
             "timestamp": 1655358465962
         }, {
-            "id": "1918974435",
+            "id": "5",
             "version": "1.0",
             "params": {
                 "countDown": 1204
@@ -99,7 +99,7 @@
             "method": "thing.event.property.post",
             "timestamp": 1655358465962
         }, {
-            "id": "1608711370",
+            "id": "6",
             "version": "1.0",
             "params": {
                 "order": "zlDIeeVLKCKKgfcOevLEaQyqIKtrpWphKmhxjxvlQckXEFEJwtzsIiqntjSBaPZrUVZYsYDlOJBmUAlmuChXKbMIKiVdjxRIxpodEVESCHddmxKRkGQIiqsNRDhlZAmzujbHftEmESIyisiPNDgYaMjuNeZxdmAhLOVsCGKAcxIVuMzmFTFEmQNmSOdltceu",
@@ -109,18 +109,22 @@
             "timestamp": 1655358465962
         },
         {
-            "id": "2",
+            "id": "7",
             "method": "thing.service.property.get",
             "timestamp": 152889788000,
             "params": [],
             "version": "1.0"
         }, {
-            "id": "2",
+            "id": "8",
             "method": "thing.service.property.get",
             "timestamp": 152889788000,
             "params": "",
             "version": "1.0"
         }
     ],
-    "isFail": true
+    "failed_entity_ids": [
+        "1",
+        "7",
+        "8"
+    ]
 }
