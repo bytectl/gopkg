@@ -111,6 +111,7 @@ func (s *Thing) init() {
 			Method:     "thing.service.property.get",
 			CallType:   "sync",
 			Required:   true,
+			InputData:  s.Properties,
 			OutputData: s.Properties,
 		}
 	}

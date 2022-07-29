@@ -99,15 +99,15 @@ func validateEntityParams(specData map[string]*Property, data []byte) error {
 	if data == nil || len(string(data)) == 0 || strings.Compare(string(data), "{}") == 0 {
 		return nil
 	}
-	if specData == nil {
-		return nil
-	}
 	paramMap := make(map[string]interface{})
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	// 使用json number
 	decoder.UseNumber()
 	if err := decoder.Decode(&paramMap); err != nil {
 		return err
+	}
+	if len(specData) == 0 && len(paramMap) > 0 {
+		return fmt.Errorf("specData is empty, but params is not empty")
 	}
 	for k, v := range paramMap {
 		param, ok := specData[k]

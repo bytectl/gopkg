@@ -262,7 +262,7 @@ func (s *DigitalSpec) ValidateValue(value interface{}) error {
 		return fmt.Errorf("(digital).value err: %v", err)
 	}
 	if int64Value < s.Value.Min || int64Value > s.Value.Max {
-		return fmt.Errorf("(digital).value err: value is out of range [%v, %v]", s.Value.Min, s.Value.Max)
+		return fmt.Errorf("(digital).value err: value(%v) is out of range [%v, %v]", int64Value, s.Value.Min, s.Value.Max)
 	}
 	return nil
 }
@@ -335,7 +335,7 @@ func (s *FloatSpec) ValidateValue(value interface{}) error {
 		return fmt.Errorf("(float).value err: %v", err)
 	}
 	if floatValue > s.Value.Max || floatValue < s.Value.Min {
-		return fmt.Errorf("(float) err: value is out of range [%v, %v]", s.Value.Min, s.Value.Max)
+		return fmt.Errorf("(float) err: value(%v) is out of range [%v, %v]", floatValue, s.Value.Min, s.Value.Max)
 	}
 	return nil
 }
@@ -377,7 +377,7 @@ func (s *TextSpec) ValidateSpec() error {
 		MinLength = 1
 	)
 	if s.Value.Length > maxLength || s.Value.Length < MinLength {
-		err := fmt.Errorf("length out of range [%v, %v]", MinLength, maxLength)
+		err := fmt.Errorf("length(%v) out of range [%v, %v]", s.Value.Length, MinLength, maxLength)
 		return fmt.Errorf("(text).length err: %v", err)
 	}
 	return nil
@@ -555,7 +555,7 @@ func (s *ArraySpec) ValidateSpec() error {
 		MinSize = 1
 	)
 	if s.Value.Size > maxSize || s.Value.Size < MinSize {
-		err := fmt.Errorf("size out of range [%v, %v]", MinSize, maxSize)
+		err := fmt.Errorf("size(%v) out of range [%v, %v]", s.Value.Size, MinSize, maxSize)
 		return fmt.Errorf("(array).size err: %v", err)
 	}
 	err := s.Item.ValidateSpec()

@@ -107,6 +107,19 @@
             },
             "method": "thing.event.property.post",
             "timestamp": 1655358465962
+        },
+        {
+            "id": "2",
+            "method": "thing.service.property.get",
+            "timestamp": 152889788000,
+            "params": [],
+            "version": "1.0"
+        }, {
+            "id": "2",
+            "method": "thing.service.property.get",
+            "timestamp": 152889788000,
+            "params": "",
+            "version": "1.0"
         }
     ],
     "isFail": true

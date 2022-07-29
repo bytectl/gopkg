@@ -161,8 +161,24 @@
             "id": "2",
             "method": "thing.service.property.get",
             "timestamp": 152889788000,
-            "params": "",
+            "params": null,
+            "version": "1.0"
+        },
+        {
+            "id": "2",
+            "method": "thing.service.property.get",
+            "timestamp": 152889788000,
+            "params": {},
+            "version": "1.0"
+        },
+        {
+            "id": "2",
+            "method": "thing.service.property.get",
+            "timestamp": 152889788000,
+            "params": {
+                "switch": 1
+            },
             "version": "1.0"
         }
-    ]
+]
 }
