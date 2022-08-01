@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	openapiV2Opt "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -188,6 +189,14 @@ func buildMethodDesc(g *protogen.GeneratedFile, m *protogen.Method, method, path
 func fieldsToMap(message *protogen.Message, method string, ptype int32) map[string]interface{} {
 	fields := message.Desc.Fields()
 	param := map[string]interface{}{}
+	requiredParams := []string{}
+	schema, ok := proto.GetExtension(message.Desc.Options(), openapiV2Opt.E_Openapiv2Schema).(*openapiV2Opt.Schema)
+	if ok {
+
+		if schema != nil && schema.JsonSchema != nil {
+			requiredParams = schema.JsonSchema.Required
+		}
+	}
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
 		comment := trimComment(message.Fields[i].Comments.Leading.String())
@@ -205,6 +214,16 @@ func fieldsToMap(message *protogen.Message, method string, ptype int32) map[stri
 			}
 		}
 		value := fd.Kind().String()
+		for _, v := range requiredParams {
+
+			if strings.Compare(v, fd.JSONName()) == 0 {
+				if method != "GET" && method != "DELETE" {
+					value += "," + "required"
+				}
+				break
+			}
+		}
+
 		if comment != "" {
 			if ptype == 0 {
 				if method != "GET" && method != "DELETE" {
@@ -234,6 +253,15 @@ func fieldsToTableParams(message *protogen.Message, method string) string {
 	}
 	fields := message.Desc.Fields()
 	param := map[string]interface{}{}
+
+	requiredParams := []string{}
+	schema, ok := proto.GetExtension(message.Desc.Options(), openapiV2Opt.E_Openapiv2Schema).(*openapiV2Opt.Schema)
+	if ok {
+
+		if schema != nil && schema.JsonSchema != nil {
+			requiredParams = schema.JsonSchema.Required
+		}
+	}
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
 		comment := trimComment(message.Fields[i].Comments.Leading.String())
@@ -249,7 +277,14 @@ func fieldsToTableParams(message *protogen.Message, method string) string {
 		if comment == "" {
 			comment = "-"
 		}
-		tableParamString += fmt.Sprintf("| %v | %v | %v | %v |\n", fd.JSONName(), fd.Kind().String(), "required", comment)
+		optionString := "optional"
+		for _, v := range requiredParams {
+			if v == fd.JSONName() {
+				optionString = "required"
+				break
+			}
+		}
+		tableParamString += fmt.Sprintf("| %v | %v | %v | %v |\n", fd.JSONName(), fd.Kind().String(), optionString, comment)
 
 	}
 	tableParamString = strings.Trim(tableParamString, "\n")
